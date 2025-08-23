@@ -1,0 +1,128 @@
+:root {
+  --bg: #0d1b2a;
+  --bg-2: #0f2033;
+  --text: #e6efff;
+  --text-dim: #b9c7e6;
+  --accent: #2f5fa7;
+  --accent-2: #1e3f72;
+  --line: #274060;           /* connector color */
+  --chip: #1a2238;
+  --chip-hover: #2c3e66;
+}
+
+.container {
+  position: relative;
+  margin-left: 18px;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+
+/* One row (label + actions). We draw the little ├─ connector here */
+.row {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+/* Horizontal part of connector: ─ */
+.row::before {
+  content: "";
+  position: absolute;
+  left: -18px;         
+  top: 50%;
+  width: 14px;         
+  border-top: 1px solid var(--line);
+  transform: translateY(-50%);
+}
+
+/* Root should not draw the connector coming from the left */
+.root > .row::before {
+  display: none;
+}
+
+/* Label chip */
+.label {
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease;
+  color: var(--text);
+}
+
+.label:hover {
+  background: var(--bg-2);
+}
+
+.selected {
+  background: var(--accent);
+  color: white;
+}
+
+/* Inline actions */
+.actions {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.actions button {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--chip);
+  color: var(--text);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.actions button:hover {
+  background: var(--chip-hover);
+  border-color: var(--line);
+}
+
+/* Children column: draw the vertical line with a pseudo-element */
+.children {
+  position: relative;
+  margin-left: 18px;
+}
+
+/* the column itself */
+.children::before {
+  content: "";
+  position: absolute;
+  left: 0;                 /* column is at the left edge of .children */
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--line);
+}
+
+/* hide the column below the last child’s midpoint */
+.children > .container:last-child > .row::after {
+  content: "";
+  position: absolute;
+  left: -18px;             
+  top: calc(50% + 1px);   
+  width: 2px;              
+  height: 1000px;         
+  background: var(--bg);  
+  pointer-events: none;
+}
+
+/* Input styling */
+.input {
+  width: 14ch;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 6px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 95, 167, 0.25);
+}

@@ -10,8 +10,8 @@ export type Primitive = "box" | "cylinder" | "cone" | "sphere";
 
 // Node definition
 export type Node = {
-    id: String;
-    name: String;
+    id: string;
+    name: string;
     transform: Transform;
     children: Node[];
     render?: {               // present => draws a mesh; absent => empty

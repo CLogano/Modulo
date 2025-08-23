@@ -2,31 +2,27 @@
 import type { Node } from './types';
 import type { Transform } from './types';
 import type { Primitive } from './types';
+import { v4 as uuidv4 } from "uuid";
 
 // Creating the root node
 // Starts with default transform (0 pos, 1 scale, 0 rot)
-export function createRoot(
-    name: string = "root",
-    transform: Transform = {
-        position: [0, 0, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0]
-    },
-    render?: { primitive: Primitive }
+export function createNode(
+  name: string,
+  transform: Transform = {
+    position: [0,0,0],
+    scale: [1,1,1],
+    rotation: [0,0,0]
+  },
+  render?: { primitive: Primitive },
+  isRoot: boolean = false
 ): Node {
-
-    const root: Node = {
-        id: "root",
-        name: name,
-        transform: transform,
-        children: []
-    };
-
-    if (render) {
-        return { ...root, render };
-    }
-
-    return root;
+  return {
+    id: isRoot ? "root" : uuidv4(),
+    name,
+    transform,
+    children: [],
+    ...(render ? { render } : {})
+  };
 }
 
 // Adds current node as a child of node with id 'parentId'.
@@ -219,7 +215,7 @@ export function printTree(root: Node | null | undefined, depth: number = 0): voi
 
     const indent = "  ".repeat(depth);
     console.log(
-        `${indent}- ${root.name} (id: ${root.id})`,
+        `${indent}- ${root.name}`,
         root.render ? ` [${root.render.primitive}]` : ""
     );
 
