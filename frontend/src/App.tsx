@@ -1,35 +1,75 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import classes from "./App.module.css";
+import { createNode, addChild, deleteNode, updateNode } from './scene/tree';
+import type { Node, Transform, Primitive } from './scene/types';
+import Hierarchy from './components/Hierarchy';
+import Scene from './components/Scene';
+import Inspector from './components/Inspector';
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  // State representing the tree
+  const [root, setRoot] = useState<Node | null>(null);
+  // State representing the currently selected node
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Handle a newly selected node
+  const onSelectHandler = (id: string) => {
+    setSelectedId(id);
+  }
+
+  // Handle adding a node
+  const onAddHandler = (
+    parentId: string | null,
+    name: string = "New Node",
+    transform?: Transform,
+    render?: { primitive: Primitive },
+    isRoot: boolean = false
+  ) => {
+
+    // Create the node
+    const newNode = createNode(name, transform, render, isRoot);
+
+    if (isRoot) {
+      setRoot(newNode); // create root
+    } else if (parentId) {
+      setRoot(prev => addChild(prev, parentId, newNode)); // add child
+    }
+
+    setSelectedId(newNode.id);
+  };
+
+  // Handle deleting a node
+  const onDeleteHandler = (targetId: string) => {
+    setRoot(prev => deleteNode(prev, targetId));
+    if (selectedId === targetId) {
+      setSelectedId(null); // unselect if the deleted node was selected
+    }
+  };
+
+  // Handle updating a node (rename, transform, render, etc.)
+  const onUpdateHandler = (id: string, updates: Partial<Node>) => {
+    setRoot((prev) => updateNode(prev, id, updates));
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className={classes.container}>
+      <Hierarchy
+        root={root}
+        selectedId={selectedId}
+        onSelect={onSelectHandler}
+        onAdd={onAddHandler}
+        onDelete={onDeleteHandler}
+        onUpdate={onUpdateHandler}
+      />
+      <Scene
+
+      />
+      <Inspector
+      
+      />
+    </div>
   )
 }
 
-export default App
+export default App;

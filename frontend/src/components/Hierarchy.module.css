@@ -1,0 +1,32 @@
+.container {
+  width: 25%;
+  max-width: 600px;
+  height: 100%;
+  background-color: #0d1b2a; /* navy dark */
+  color: #e0e0e0;           /* off-white text */
+  display: flex;
+  flex-direction: column;
+  font-family: sans-serif;
+  border-right: 1px solid #1b263b;
+}
+
+.header {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  background-color: #1b263b; /* slightly lighter navy */
+  border-bottom: 1px solid #24344d;
+  font-weight: bold;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  color: #9fb1c9; /* muted blue-grey */
+}
+
+.title {
+  color: #e0e0e0;
+}
