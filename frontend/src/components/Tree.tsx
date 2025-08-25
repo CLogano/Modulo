@@ -4,32 +4,39 @@ import TreeNode from "./TreeNode";
 
 interface TreeProps {
     root: Node;
+    justCreatedIdRef: React.RefObject<string | null>;
     selectedId: string | null;
     onSelect: (targetId: string) => void;
     onAdd: (
         parentId: string | null,
         name: string,
         transform?: Transform,
-        render?: { primitive: Primitive },
-        isRoot?: boolean
+        render?: { primitive: Primitive }
     ) => void;
     onDelete: (targetId: string) => void;
     onUpdate: (id: string, updates: Partial<Node>) => void;
+    onReparent: (childId: string, parentId: string) => void;
+    onReorder: (childId: string, parentId: string, targetIndex: number) => void;
 }
 
 const Tree = (props: TreeProps) => {
 
-    const { root, selectedId, onSelect, onAdd, onDelete, onUpdate } = props;
+    const { root, justCreatedIdRef, selectedId, onSelect, onAdd, onDelete, onUpdate, onReparent, onReorder } = props;
 
     return (
         <div className={classes.container}>
             <TreeNode
                 node={root}
+                parentId={null}
+                indexInParent={0}
+                justCreatedIdRef={justCreatedIdRef}
                 selectedId={selectedId}
                 onSelect={onSelect}
                 onAdd={onAdd}
                 onDelete={onDelete}
                 onUpdate={onUpdate}
+                onReparent={onReparent}
+                onReorder={onReorder}
             />
         </div>
     );

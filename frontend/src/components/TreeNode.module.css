@@ -25,15 +25,22 @@
   align-items: center;
   gap: 8px;
   padding: 3px 0;
+  user-select: none;
+  cursor: default;          
+}
+
+/* Pointer when hovering a row */
+.row:hover {
+  cursor: pointer;
 }
 
 /* Horizontal part of connector: ─ */
 .row::before {
   content: "";
   position: absolute;
-  left: -18px;         
+  left: -18px;
   top: 50%;
-  width: 14px;         
+  width: 14px;
   border-top: 1px solid var(--line);
   transform: translateY(-50%);
 }
@@ -47,16 +54,25 @@
 .label {
   padding: 2px 8px;
   border-radius: 6px;
-  cursor: pointer;
+  cursor: inherit;                 /* inherit row's cursor */
   transition: background 120ms ease;
   color: var(--text);
 }
 
-.label:hover {
-  background: var(--bg-2);
+/* Hover should NOT override selected */
+.label:hover:not(.selected) {
+  background: #18324f;
 }
 
-.selected {
+.selected,
+.selected:hover {
+  background: var(--accent);
+  color: white;
+}
+
+/* If the row has selectedRow, enforce selected styling on its label */
+.selectedRow .label,
+.selectedRow .label:hover {
   background: var(--accent);
   color: white;
 }
@@ -103,11 +119,11 @@
 .children > .container:last-child > .row::after {
   content: "";
   position: absolute;
-  left: -18px;             
-  top: calc(50% + 1px);   
-  width: 2px;              
-  height: 1000px;         
-  background: var(--bg);  
+  left: -18px;
+  top: calc(50% + 1px);
+  width: 2px;
+  height: 1000px;
+  background: var(--bg);
   pointer-events: none;
 }
 
@@ -125,4 +141,31 @@
 .input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(47, 95, 167, 0.25);
+}
+
+.dragOver .label:not(.selected) {
+  background: #244b74;
+}
+
+/* Reorder lines (hoverZone === "top" | "bottom")
+   Use a background stripe on the whole row so it spans label + actions */
+.insertTop,
+.insertBottom {
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-repeat: no-repeat;
+  background-size: calc(100% + 18px) 2px; /* full row + connector width, 2px tall */
+}
+
+/* Position the line */
+.insertTop {
+  background-position: left -18px top;    /* extend into the connector area */
+}
+.insertBottom {
+  background-position: left -18px bottom;
+}
+
+/* Don’t show chip hover fill when we’re showing a reorder line */
+.insertTop .label:hover,
+.insertBottom .label:hover {
+  background: transparent;
 }
