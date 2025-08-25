@@ -4,23 +4,25 @@ import Tree from "./Tree";
 import { AccountTree } from "@mui/icons-material";
 
 interface HierarchyProps {
-    root: Node | null;
+    root: Node;
+    justCreatedIdRef: React.RefObject<string | null>;
     selectedId: string | null;
     onSelect: (id: string) => void;
     onAdd: (
         parentId: string | null,
         name: string,
         transform?: Transform,
-        render?: { primitive: Primitive },
-        isRoot?: boolean
+        render?: { primitive: Primitive }
     ) => void;
     onDelete: (targetId: string) => void;
     onUpdate: (id: string, updates: Partial<Node>) => void;
+    onReparent: (childId: string, parentId: string) => void;
+    onReorder: (childId: string, parentId: string, targetIndex: number) => void;
 }
 
 const Hierarchy = (props: HierarchyProps) => {
 
-    const { root, selectedId, onSelect, onAdd, onDelete, onUpdate } = props;
+    const { root, justCreatedIdRef, selectedId, onSelect, onAdd, onDelete, onUpdate, onReparent, onReorder } = props;
 
     return (
         <div className={classes.container}>
@@ -28,25 +30,17 @@ const Hierarchy = (props: HierarchyProps) => {
                 <AccountTree className={classes.icon} />
                 <div className={classes.title}>Hierarchy</div>
             </header>
-            {!root ? (
-                // If no root exists, show a "Create Root" button
-                <button
-                    onClick={() =>
-                        onAdd(null, "New Node", undefined, undefined, true)
-                    }
-                >
-                    Create Root
-                </button>
-            ) : (
-                <Tree
-                    root={root}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    onAdd={onAdd}
-                    onDelete={onDelete}
-                    onUpdate={onUpdate}
-                />
-            )}
+            <Tree
+                root={root}
+                justCreatedIdRef={justCreatedIdRef}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                onAdd={onAdd}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+                onReparent={onReparent}
+                onReorder={onReorder}
+            />
         </div>
     )
 };
