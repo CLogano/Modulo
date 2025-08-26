@@ -8,7 +8,7 @@ interface InspectorProps {
 const Inspector = (props: InspectorProps) => {
 
     return (
-        <div>
+        <div className={classes.container}>
             
         </div>
     )

@@ -1,13 +1,13 @@
 .container {
-  width: 25%;
-  max-width: 600px;
+  width: 100%;
   height: 100%;
-  background-color: #0d1b2a; /* navy dark */
-  color: #e0e0e0;           /* off-white text */
+  background-color: #0d1b2a;
+  color: #e0e0e0;
   display: flex;
   flex-direction: column;
   font-family: sans-serif;
   border-right: 1px solid #1b263b;
+  box-sizing: border-box;
 }
 
 .header {
@@ -15,8 +15,8 @@
   display: flex;
   align-items: center;
   padding: 0 1rem;
-  background-color: #1b263b; /* slightly lighter navy */
-  border-bottom: 1px solid #24344d;
+  background-color: #1b263b;
+  border-bottom: 2px solid #24344d;
   font-weight: bold;
   font-size: 0.9rem;
   letter-spacing: 0.5px;
@@ -24,7 +24,7 @@
 
 .icon {
   margin-right: 0.5rem;
-  color: #9fb1c9; /* muted blue-grey */
+  color: #9fb1c9;
 }
 
 .title {
