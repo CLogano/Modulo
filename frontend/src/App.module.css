@@ -1,4 +1,58 @@
 .container {
-    width: 100vw;
-    height: 100vh;
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Fixed-width left pane (Hierarchy) */
+.paneLeft {
+  min-width: 200px;
+  max-width: 600px;
+  height: 100%;
+  display: flex;
+}
+
+/* Center pane grows to fill remaining width (Scene) */
+.paneCenter {
+  flex: 1 1 auto;
+  min-width: 200px;
+  height: 100%;
+  display: flex;
+}
+
+/* Fixed-width right pane (Inspector) */
+.paneRight {
+  min-width: 100px;
+  max-width: 600px;
+  height: 100%;
+  display: flex;
+}
+
+/* Gutters between panes */
+.gutter {
+  width: 2px;
+  cursor: col-resize;
+  position: relative;
+  background-color: #24344d;
+  z-index: 10;
+  
+}
+
+/* A subtle 1px line centered in the gutter */
+.gutter::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-0.5px);
+  width: 1px;
+  height: 100%;
+  background: #1b263b;
+  opacity: 0.8;
+}
+
+.gutter:hover::after {
+  background: #3b4d6b;
 }
