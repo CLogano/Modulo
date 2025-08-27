@@ -15,7 +15,7 @@ function App() {
 
   // State representing the tree. We initialize the root only
   const [root, setRoot] = useState<Node | null>(
-    () => createNode("Root", undefined, undefined, true)
+    () => createNode("Sample Scene", undefined, undefined, true)
   );
   // State representing the currently selected node
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -28,7 +28,7 @@ function App() {
   const justCreatedIdRef = useRef<string | null>(null);
 
   // Handle a newly selected node
-  const onSelectHandler = (id: string) => {
+  const onSelectHandler = (id: string | null) => {
     setSelectedId(id);
   }
 

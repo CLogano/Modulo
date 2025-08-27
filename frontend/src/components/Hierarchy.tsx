@@ -7,7 +7,7 @@ interface HierarchyProps {
     root: Node;
     justCreatedIdRef: React.RefObject<string | null>;
     selectedId: string | null;
-    onSelect: (id: string) => void;
+    onSelect: (id: string | null) => void;
     onAdd: (
         parentId: string | null,
         name: string,

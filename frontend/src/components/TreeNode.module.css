@@ -23,7 +23,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   padding: 3px 0;
   user-select: none;
   cursor: default;          
@@ -79,11 +79,21 @@
 
 /* Inline actions */
 .actions {
-  display: inline-flex;
+  position: relative;       /* ensure dropdown positions to this area */
+  display: flex;
+  align-items: center;
   gap: 6px;
+  overflow: visible;        /* let dropdown escape the row bounds if needed */
 }
 
-.actions button {
+.addWrap {
+  position: relative;       /* dropdown anchors to the + icon wrapper */
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon {
+  position: relative;
   font-size: 12px;
   padding: 2px 6px;
   border-radius: 6px;
@@ -94,7 +104,7 @@
   transition: background 120ms ease, border-color 120ms ease;
 }
 
-.actions button:hover {
+.icon:hover {
   background: var(--chip-hover);
   border-color: var(--line);
 }

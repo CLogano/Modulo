@@ -56,6 +56,26 @@ export function buildObject(node: Node): THREE.Object3D {
         group.add(buildObject(child));
     }
 
-    return group;
+  return group;
 }
+
+// Dispose helper to avoid GPU leaks when we replace content
+export function disposeObject(obj: THREE.Object3D) {
+
+  obj.traverse((o) => {
+
+    const mesh = o as THREE.Mesh;
+
+    if (mesh.geometry) {
+      mesh.geometry.dispose();
+    }
+
+    const mat = mesh.material as THREE.Material | THREE.Material[] | undefined;
+
+    if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+    else if (mat) {
+      mat.dispose();
+    }
+  });
+};
 
