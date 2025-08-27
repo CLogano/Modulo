@@ -1,0 +1,51 @@
+.container {
+  position: absolute;
+  top: calc(100% + 6px);   /* appear below the + button */
+  left: 50%;               /* center horizontally under the button */
+  transform: translateX(-50%); /* center anchor */
+  width: 150px;
+  height: 35px;
+  background: var(--chip);
+  color: var(--text);
+  border: 1px solid #1b263b;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  transform-origin: top center;
+  animation: popIn 120ms ease-out both;
+  z-index: 1000;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateX(-50%) scale(0.96); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+.row {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 6px;
+}
+
+.item {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  gap: 6px;
+  user-select: none;
+}
+
+.item:hover {
+  background: var(--chip-hover);
+  border-radius: 6px;
+}
+
+.icon {
+  font-size: 18px;
+  color: #e6efff;
+  opacity: 0.9;
+}

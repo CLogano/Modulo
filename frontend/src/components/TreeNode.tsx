@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import classes from "./TreeNode.module.css";
 import type { Node, Transform, Primitive } from "../scene/types";
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import PrimitivePickerDropdown from "./PrimitivePickerDropdown";
 
 interface TreeNodeProps {
   node: Node;
-  parentId: string | null;          
+  parentId: string | null;
   indexInParent: number;
   justCreatedIdRef: React.RefObject<string | null>;
   selectedId: string | null;
@@ -37,6 +41,8 @@ const TreeNode = (props: TreeNodeProps) => {
   // Top and bottom styles show dividers for reordering among siblings.
   // Middle styling indicates reparenting under hovered node.
   const [hoverZone, setHoverZone] = useState<"top" | "middle" | "bottom" | null>(null);
+  // State for managing if we want to show the primitive picker dropdown
+  const [showPickerDropdown, setShowPickerDropdown] = useState(false);
   // Input ref (so we can focus/select text and read the current value)
   const inputRef = useRef<HTMLInputElement>(null);
   // Counter ref to stabilize drag enter/leave. Browsers fire dragenter/leave for
@@ -80,6 +86,15 @@ const TreeNode = (props: TreeNodeProps) => {
     if (next && next !== node.name) onUpdate(node.id, { name: next });
   };
 
+  // Helper to zoom to Scene via CustomEvent
+  const zoomToNode = () => {
+    // ensure selection syncs first
+    //onSelect(node.id);
+    window.dispatchEvent(
+      new CustomEvent("scene:zoom-to-node", { detail: { id: node.id } })
+    );
+  };
+
   // Clear all drag hints (helper)
   const clearHints = () => {
     overCountRef.current = 0;
@@ -89,7 +104,7 @@ const TreeNode = (props: TreeNodeProps) => {
   // Global safety net: if the dragged node ends or a drop happens anywhere,
   // clear our hover highlight and reset the counter.
   useEffect(() => {
-    
+
     window.addEventListener("dragend", clearHints);
     window.addEventListener("drop", clearHints);
     return () => {
@@ -113,11 +128,11 @@ const TreeNode = (props: TreeNodeProps) => {
         draggable={!isEditing && node.id !== "root"}
         onMouseDown={(e) => {
           if (e.button !== 0) {
-             return; // left mouse-button only
+            return; // left mouse-button only
           }
+          e.stopPropagation();
           onSelect(node.id); // select the node
         }}
-        onDoubleClick={() => setIsEditing(true)} // double-click to rename
         onDragStart={(e) => {
           // Put our node id on the dataTransfer so any drop target can read it.
           e.dataTransfer.setData("application/x-node-id", node.id);
@@ -271,7 +286,13 @@ const TreeNode = (props: TreeNodeProps) => {
         data-parent-id={parentId}
         data-index-in-parent={indexInParent}
       >
-        <div className={`${classes.label} ${isSelected ? classes.selected : ""}`}>
+        <div
+          className={`${classes.label} ${isSelected ? classes.selected : ""}`}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            zoomToNode(); // double click to zoom on selected node
+          }}
+        >
           {isEditing ? (
             <input
               ref={inputRef}
@@ -289,12 +310,30 @@ const TreeNode = (props: TreeNodeProps) => {
           )}
         </div>
         {/* Add and delete buttons */}
-        <div className={classes.actions} onClick={(e) => e.stopPropagation()}>
-          <button onClick={() => onAdd(node.id, "New Node")}>＋</button>
+        {(isSelected || node.id === "root") && <div className={classes.actions} onClick={(e) => e.stopPropagation()}>
+          <span className={classes.addWrap}>
+            <AddIcon className={classes.icon} onClick={() => setShowPickerDropdown(s => !s)} style={{ fontSize: "18px" }} />
+            {showPickerDropdown && (
+              <PrimitivePickerDropdown
+                onPick={(choice) => {
+                  setShowPickerDropdown(false);
+                  onAdd(node.id, "New Node", undefined,
+                    choice ? { primitive: choice } : undefined
+                  );
+                }}
+                onDismiss={() => setShowPickerDropdown(false)}
+              />
+            )}
+          </span>
+          <EditIcon
+            className={classes.icon}
+            onClick={() => setIsEditing(true)}
+            style={{ fontSize: "18px" }}
+          />
           {node.id !== "root" && (
-            <button onClick={() => onDelete(node.id)}>🗑</button>
+            <DeleteIcon className={classes.icon} onClick={() => onDelete(node.id)} style={{ fontSize: "18px" }} />
           )}
-        </div>
+        </div>}
       </div>
       {/* Child nodes */}
       <div className={classes.children}>
