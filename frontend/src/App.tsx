@@ -152,7 +152,11 @@ function App() {
       </div>
       <div className={`${classes.gutter} ${classes.gutterRight}`} onMouseDown={onGutterMouseDown("right")} />
       <div className={classes.paneRight} style={{ flex: `0 0 ${rightWidth}px` }}>
-        <Inspector />
+        <Inspector 
+          root={root}
+          selectedId={selectedId}
+          onUpdate={onUpdateHandler}
+        />
       </div>
     </div>
   )

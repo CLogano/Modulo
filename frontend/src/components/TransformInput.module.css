@@ -1,0 +1,57 @@
+.row {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0;
+}
+
+.label {
+  color: #c8d6e5;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.inputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.axisGroup {
+  display: flex;
+  align-items: center;
+  background: #0b1a2a;
+  border: 1px solid #20344f;
+  border-radius: 4px;
+  padding: 0.15rem 0.25rem;
+}
+
+.axisBadge {
+  display: inline-block;
+  min-width: 1rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.65rem;
+  margin-right: 0.25rem;
+  border-radius: 3px;
+  background: #1b263b;
+  color: #9fb1c9;
+}
+
+.input {
+  flex: 1;
+  max-width: 60px;
+  background: transparent;
+  border: none;
+  color: #e0e0e0;
+  font-size: 0.75rem;
+  outline: none;
+  min-width: 0;
+  padding: 0;
+}
+
+.input:disabled {
+  opacity: 0.6;
+}
