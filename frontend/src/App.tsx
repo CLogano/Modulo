@@ -36,12 +36,12 @@ function App() {
   const onAddHandler = (
     parentId: string | null,
     name: string = "New Node",
-    transform?: Transform,
+    transform?: Partial<Transform>,
     render?: { primitive: Primitive },
   ) => {
 
     // Create the node
-    const newNode = createNode(name, transform, render, false);
+    const newNode = createNode(name, transform, render);
     if (parentId) {
       setRoot(prev => addChild(prev, parentId, newNode)); // Attach the node under the parent
       setSelectedId(newNode.id); // Select this node
@@ -68,6 +68,14 @@ function App() {
     if (childId === newParentId) {
       return;
     }
+
+    // Ask the Scene to do a view-side reparent (preserves world),
+    // then Scene will call onUpdate(...) with the child's new local TRS,
+    // and finally we do a structure-only reparent in the model.
+    window.dispatchEvent(new CustomEvent("scene:request-reparent", {
+      detail: { childId, newParentId }
+    }));
+
     setRoot(prev => reparent(prev, childId, newParentId));
     setSelectedId(childId); // keep the moved node selected
   };
@@ -135,7 +143,12 @@ function App() {
       </div>
       <div className={`${classes.gutter} ${classes.gutterLeft}`} onMouseDown={onGutterMouseDown("left")} />
       <div className={classes.paneCenter}>
-        <Scene root={root} selectedId={selectedId} onSelect={onSelectHandler} />
+        <Scene 
+          root={root}
+          selectedId={selectedId}
+          onSelect={onSelectHandler}
+          onUpdate={onUpdateHandler}
+        />
       </div>
       <div className={`${classes.gutter} ${classes.gutterRight}`} onMouseDown={onGutterMouseDown("right")} />
       <div className={classes.paneRight} style={{ flex: `0 0 ${rightWidth}px` }}>

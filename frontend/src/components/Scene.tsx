@@ -1,23 +1,29 @@
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import classes from "./Scene.module.css";
 import * as THREE from 'three';
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TransformControls } from "three-stdlib";
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import type { Node } from "../scene/types";
 import { buildObject, disposeObject } from "../scene/scene";
+import ViewportToolbar from "./ViewportToolbar";
 
 interface SceneProps {
     root: Node | null;
     selectedId: string | null;
     onSelect: (id: string | null) => void;
+    onUpdate: (id: string, updates: Partial<Node>) => void;
 }
 
 const Scene = (props: SceneProps) => {
 
-    const { root, selectedId, onSelect } = props;
+    const { root, selectedId, onSelect, onUpdate } = props;
+
+    // toolbar/gizmo mode
+    const [selectedGizmoMode, setSelectedGizmoMode] = useState<"view"|"move"|"rotate"|"scale">("move");
 
     // Reference to the <div> container in our JSX
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -38,6 +44,13 @@ const Scene = (props: SceneProps) => {
     // Raycasting for selecting objects, etc.
     const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
     const pointerNdc = useRef(new THREE.Vector2()); // scratch vec2
+    // Transform controls (Gizmo) refs
+    const transformControlsRef = useRef<TransformControls | null>(null);
+    const gizmoSceneRef = useRef<THREE.Scene | null>(null);
+    const gizmoPointerDownRef = useRef(false);
+    const attachedGizmoObjRef = useRef<THREE.Object3D | null>(null);
+    // Internal gizmo mode (THREE naming)
+    const gizmoModeRef = useRef<"translate" | "rotate" | "scale">("translate");
 
     useEffect(() => {
 
@@ -60,6 +73,7 @@ const Scene = (props: SceneProps) => {
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.shadowMap.enabled = true;
+        renderer.autoClear = false;
 
         // Append renderer canvas to container
         container.appendChild(renderer.domElement);
@@ -70,8 +84,11 @@ const Scene = (props: SceneProps) => {
         // Scene setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x111111);
-        sceneRef.current = scene;    
-        
+        sceneRef.current = scene;
+        // Create scene for gizmo as well
+        const gizmoScene = new THREE.Scene();
+        gizmoSceneRef.current = gizmoScene;
+
         // Grid (floor) so you can see space/origin
         const grid = new THREE.GridHelper(50, 50, 0x888888, 0x444444);
         scene.add(grid);
@@ -108,6 +125,26 @@ const Scene = (props: SceneProps) => {
         controls.maxDistance = 200;
         controls.enablePan = true;
         controlsRef.current = controls;
+
+        // Transform controls
+        const transformControls = new TransformControls(camera, renderer.domElement);
+        transformControls.setMode('translate');           // 'translate' | 'rotate' | 'scale', translate by default
+        transformControls.setSize(0.5);                      // gizmo size
+        transformControls.layers.set(31);                   // Give it a high layer to ignore raycasts
+        transformControls.visible = false;                // start hidden
+        gizmoScene.add(transformControls);              // Add to gizmo scene
+        transformControlsRef.current = transformControls;
+        (transformControls as any).addEventListener('mouseDown', () => {
+            gizmoPointerDownRef.current = true;
+        });
+        (transformControls as any).addEventListener('mouseUp', () => {
+            gizmoPointerDownRef.current = false;
+        });
+
+        // Disable OrbitControls / Context menu while dragging the gizmo
+        (transformControls as any).addEventListener('dragging-changed', (e: any) => {
+            controls.enabled = !e.value;
+        });
 
         // Post-processing pipeline
         const composer = new EffectComposer(renderer);
@@ -147,11 +184,18 @@ const Scene = (props: SceneProps) => {
         // Click to select objects on the canvas
         const handleMouseDown = (e: MouseEvent) => {
 
-            e.stopPropagation();              // don't let the Tree's global "clear selection" run
+            //e.stopPropagation();              // don't let the Tree's global "clear selection" run
 
             if (e.button !== 0) {
                 return;
             }      // left click only
+
+            // If we are interacting with the gizmo, do not change selection.
+            // Otherwise we can't use the gizmo
+            const tc = transformControlsRef.current as any;
+            if (gizmoPointerDownRef.current || tc?.dragging || tc?.axis) {
+                return;
+            }
 
             const cam = cameraRef.current;
             const content = contentRef.current;
@@ -168,6 +212,7 @@ const Scene = (props: SceneProps) => {
             );
 
             // Raycast only against our content hierarchy (ignore grid/axes/lights)
+            raycasterRef.current.layers.set(0);
             const ray = raycasterRef.current;
             ray.setFromCamera(pointerNdc.current, cam);
             const hits = ray.intersectObject(content, true);
@@ -185,6 +230,35 @@ const Scene = (props: SceneProps) => {
             onSelect(nodeId ?? null);
         };
         renderer.domElement.addEventListener("mousedown", handleMouseDown);
+
+        // Keyboard shortcuts: q/w/e/r -> view/translate/rotate/scale
+        const handleKeyDown = (e: KeyboardEvent) => {
+
+            // Skip gizmo hotkeys while typing in any input/textarea/contentEditable
+            const el = document.activeElement as (HTMLElement | null);
+            if (el) {
+                const t = el.tagName.toLowerCase();
+                if (t === "input" || t === "textarea" || (el as any).isContentEditable) {
+                    return; // bail — user is typing
+                }
+            }
+
+            switch (e.key.toLowerCase()) {
+                case "q":
+                    setSelectedGizmoMode("view");
+                    break;
+                case "w":
+                    setSelectedGizmoMode("move");
+                    break;
+                case "e":
+                    setSelectedGizmoMode("rotate");
+                    break;
+                case "r":
+                    setSelectedGizmoMode("scale");
+                    break;
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
 
         // Handle zooming on a selected object
         // Here we frame the object based on camera and target bounds, pos, etc.
@@ -223,6 +297,48 @@ const Scene = (props: SceneProps) => {
 
         window.addEventListener("scene:zoom-to-node", handleZoomToNode);
 
+        // World-preserving reparent: Scene does `attach()`, then reports new local TRS
+        const handleRequestReparent = (e: Event) => {
+            const detail = (e as CustomEvent<{ childId: string; newParentId: string }>).detail;
+            if (!detail || !contentRef.current) return;
+
+            const { childId, newParentId } = detail;
+
+            // Find both objects in the currently rendered content
+            let childObj: THREE.Object3D | null = null;
+            let parentObj: THREE.Object3D | null = null;
+
+            contentRef.current.traverse((o) => {
+                const id = (o as any).userData?.nodeId;
+                if (id === childId) childObj = o;
+                if (id === newParentId) parentObj = o;
+            });
+
+            if (!childObj || !parentObj) return;
+
+            // Preserve world transform while changing parent
+            (parentObj as THREE.Object3D).attach(childObj);
+
+            // Refresh matrices and read child's NEW local TRS
+            (childObj as THREE.Object3D).updateMatrix();
+            (childObj as THREE.Object3D).updateMatrixWorld(true);
+
+            const p = (childObj as THREE.Object3D).position;
+            const r = (childObj as THREE.Object3D).rotation;
+            const s = (childObj as THREE.Object3D).scale;
+
+            // Push the new LOCAL TRS back into the model
+            onUpdate(childId, {
+                transform: {
+                    position: [p.x, p.y, p.z],
+                    rotation: [r.x, r.y, r.z],
+                    scale: [s.x, s.y, s.z],
+                },
+            });
+        };
+
+        window.addEventListener("scene:request-reparent", handleRequestReparent);
+
         // Resizing: instead of resizing the WebGL canvas immediately on every tiny size change
         // (which happens constantly while dragging a gutter), we:
         // 1) record the latest container width/height,
@@ -260,8 +376,22 @@ const Scene = (props: SceneProps) => {
 
             controlsRef.current?.update();
 
-            // Draw the scene
+            const r = rendererRef.current;
+            const cam = cameraRef.current;
+            const gScene = gizmoSceneRef.current;
+
+            // Clear renderer once at the start of the frame
+            r?.setRenderTarget(null);
+            r?.clear(true, true, true);
+
+            // Draw the scenes
+            // Render main scene (with OutlinePass) via composer
             composerRef.current?.render();
+            // Render gizmo overlay on top
+            if (r && cam && gScene) {
+                r.clearDepth();       // keep color, reset depth
+                r.render(gScene, cam);
+            }
         };
         tick();
 
@@ -271,6 +401,7 @@ const Scene = (props: SceneProps) => {
             renderer.domElement.removeEventListener("contextmenu", preventContext);
             renderer.domElement.removeEventListener("mousedown", handleMouseDown);
             window.removeEventListener("scene:zoom-to-node", handleZoomToNode);
+            window.removeEventListener("scene:request-reparent", handleRequestReparent);
             if (frameRef.current) {
                 cancelAnimationFrame(frameRef.current);
             }
@@ -296,6 +427,10 @@ const Scene = (props: SceneProps) => {
             sceneRef.current = null;
             cameraRef.current = null;
             controlsRef.current = null;
+
+            transformControlsRef.current?.dispose?.();
+            gizmoSceneRef.current?.remove(transformControls);
+            transformControlsRef.current = null;
         };
 
     }, []); // run once on mount
@@ -325,8 +460,10 @@ const Scene = (props: SceneProps) => {
 
     }, [root]);
 
-    // Draw outline for selected node (x-ray style)
+    // Draw outline for selected node
+    // Also show gizmo on selected node
     useEffect(() => {
+
         const primaryPass = primaryOutlinePassRef.current;
         const childPass = childOutlinePassRef.current;
         if (!primaryPass || !childPass) {
@@ -336,7 +473,15 @@ const Scene = (props: SceneProps) => {
         primaryPass.selectedObjects = [];
         childPass.selectedObjects = [];
 
-        if (!selectedId || !contentRef.current) {
+        const transformControls = transformControlsRef.current;
+        if (!transformControls) return;
+
+        // Always reset targets
+        transformControls.detach();
+        transformControls.visible = false;
+        attachedGizmoObjRef.current = null;
+
+        if (!selectedId || selectedId === "root" || !contentRef.current) {
             return;
         }
 
@@ -350,6 +495,48 @@ const Scene = (props: SceneProps) => {
         if (!groupForNode) {
             return;
         }
+
+        // Attach and show the gizmo
+        // Only attach in non-view modes
+        if (selectedGizmoMode !== "view") {
+            transformControls.attach(groupForNode);
+            transformControls.setMode(gizmoModeRef.current);
+            attachedGizmoObjRef.current = groupForNode;
+            transformControls.visible = true;
+        } else {
+            transformControls.detach();
+            (transformControls as any).axis = null;   // clear any lingering axis
+            transformControls.visible = false;
+            attachedGizmoObjRef.current = null;
+        }
+
+        // Update node data when interacting with gizmo!!
+        const commitTransform = () => {
+
+            if (selectedId === "root") return;
+            
+            const obj = attachedGizmoObjRef.current;
+            if (!obj) return;
+
+            // ensure local/world matrix matches current TRS
+            obj.updateMatrix();
+            obj.updateMatrixWorld(true);
+
+            const p = obj.position;
+            const r = obj.rotation;
+            const s = obj.scale;
+
+            onUpdate(selectedId, {
+                transform: {
+                    position: [p.x, p.y, p.z],
+                    rotation: [r.x, r.y, r.z],
+                    scale: [s.x, s.y, s.z],
+                },
+            });
+        };
+
+        // Save when the user releases the gizmo
+        (transformControls as any).addEventListener('mouseUp', commitTransform);
 
         // Collect meshes that belong to the selected node itself (primary),
         // and meshes that belong to descendant nodes (secondary).
@@ -372,9 +559,50 @@ const Scene = (props: SceneProps) => {
         // Apply to passes
         primaryPass.selectedObjects = primaryMeshes;
         childPass.selectedObjects = childMeshes;
-    }, [selectedId, root]);
 
-    return <div className={classes.container} ref={containerRef} />;
+        return () => {
+            (transformControls as any).removeEventListener('mouseUp', commitTransform);
+        };
+    }, [selectedId, root, selectedGizmoMode]);
+
+    useEffect(() => {
+        const tc = transformControlsRef.current;
+        const controls = controlsRef.current;
+        if (!tc || !controls) {
+            return;
+        }
+
+        // hand/orbit mode
+        if (selectedGizmoMode === "view") {
+            tc.visible = false;
+            controls.mouseButtons = {
+                LEFT: THREE.MOUSE.PAN,
+                MIDDLE: THREE.MOUSE.PAN,
+                RIGHT: THREE.MOUSE.ROTATE,
+            } as any;
+        } else {
+            gizmoModeRef.current = selectedGizmoMode === "move" ? "translate" : selectedGizmoMode;
+            tc.setMode(gizmoModeRef.current);
+            // only show if an object is selected
+            if (attachedGizmoObjRef.current && selectedId && selectedId !== "root") {
+                tc.visible = true;
+            }
+            controls.mouseButtons = {
+                LEFT: null as any,
+                MIDDLE: THREE.MOUSE.PAN,
+                RIGHT: THREE.MOUSE.ROTATE,
+            } as any;
+        }
+    }, [selectedGizmoMode, selectedId]);
+
+    return (
+        <div className={classes.container} ref={containerRef}>
+            <ViewportToolbar
+                selectedMode={selectedGizmoMode}
+                onSelectMode={setSelectedGizmoMode}
+            />
+        </div>
+    );
 };
 
 export default Scene;

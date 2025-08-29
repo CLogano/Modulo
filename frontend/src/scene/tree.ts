@@ -1,28 +1,30 @@
-// Helper functions for managing a tree of type <Node>
-import type { Node } from './types';
-import type { Transform } from './types';
-import type { Primitive } from './types';
+// Model layer / source of truth
+// Tree composed of <Node>
+import type { Node, Transform, Primitive } from './types.ts';
 import { v4 as uuidv4 } from "uuid";
 
 // Creating the root node
 // Starts with default transform (0 pos, 1 scale, 0 rot)
 export function createNode(
-  name: string,
-  transform: Transform = {
-    position: [0,0,0],
-    scale: [1,1,1],
-    rotation: [0,0,0]
-  },
-  render?: { primitive: Primitive },
-  isRoot: boolean = false
+    name: string,
+    transform?: Partial<Transform>,
+    render?: { primitive: Primitive },
+    isRoot: boolean = false
 ): Node {
-  return {
-    id: isRoot ? "root" : uuidv4(),
-    name,
-    transform,
-    children: [],
-    ...(render ? { render } : {})
-  };
+
+    const t: Transform = {
+        position: transform?.position ?? [0, 0, 0],
+        scale: transform?.scale ?? [1, 1, 1],
+        rotation: transform?.rotation ?? [0, 0, 0],
+    };
+
+    return {
+        id: isRoot ? "root" : uuidv4(),
+        name,
+        transform: t,
+        children: [],
+        ...(render ? { render } : {})
+    };
 }
 
 // Adds current node as a child of node with id 'parentId'.
@@ -165,7 +167,7 @@ export function updateNode(
     targetId: string,
     updates: Partial<Omit<Node, "id" | "children" | "transform">> & {
         transform?: Partial<Transform>;
-    } // can't update id or children
+    }, // can't update id or children
 ): Node | null {
 
     // If root doesnt exist we simply return nothing
@@ -175,16 +177,23 @@ export function updateNode(
 
     // Update target node
     if (root.id === targetId) {
+
+        const nextTransform: Transform = updates.transform
+            ? {
+                position: updates.transform.position ?? root.transform.position,
+                rotation: updates.transform.rotation ?? root.transform.rotation,
+                scale: updates.transform.scale ?? root.transform.scale,
+            }
+            : root.transform;
+
         return {
             ...root,
             name: updates.name ?? root.name,
-            transform: updates.transform
-                ? { ...root.transform, ...(updates.transform as Partial<Transform>) }
-                : root.transform,
+            transform: nextTransform,
             children: root.children,
             render: updates.render
                 ? { ...(root.render ?? {}), ...updates.render }
-                : root.render
+                : root.render,
         };
     }
 
@@ -214,12 +223,13 @@ export function updateNode(
 
 // Assign a node under a new parent.
 // Appends the child node at the end of the parent's children array.
+// Maintain the child's world transform.
 // Cannot reparent under itself or a descendant node.
 // Returns the updated root.
 export function reparent(
     root: Node | null,
     childId: string,
-    parentId: string
+    parentId: string,
 ): Node | null {
 
     // If root doesnt exist we simply return nothing
