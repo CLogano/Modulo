@@ -1,7 +1,8 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import classes from "./App.module.css";
 import { createNode, addChild, removeNode, updateNode, reparent, reorderAmongSiblings } from './scene/tree';
 import type { Node, Transform, Primitive } from './scene/types';
+import { loadLocal, saveLocal } from "./utils/persist";
 import Hierarchy from './components/Hierarchy';
 import Scene from './components/Scene';
 import Inspector from './components/Inspector';
@@ -26,6 +27,30 @@ function App() {
 
   // Holds the id of the node that should auto-enter rename mode only ONCE upon creation
   const justCreatedIdRef = useRef<string | null>(null);
+
+  // Load project from local storage on mount
+  useEffect(() => {
+    const saved = loadLocal();
+    if (saved?.root) {
+      setRoot(saved.root);
+    }
+  }, []);
+
+  // Auto-save every time the root changes
+  // Wait 500ms in between to prevent rapid saves
+  useEffect(() => {
+    if (!root) {
+      return;
+    }
+
+    // Save after 500ms
+    const timer = setTimeout(() => {
+      saveLocal({ id: "local", title: "Scene", root });
+    }, 500);
+
+    // If root changes again within 500ms, cancel the previous save
+    return () => clearTimeout(timer);
+  }, [root]);
 
   // Handle a newly selected node
   const onSelectHandler = (id: string | null) => {
