@@ -1,0 +1,54 @@
+:root {
+  --panel: #1b263b;      
+  --panel-2: #24344d;    /* border/divider */
+  --chip: #1a2238;       /* button background */
+  --chip-hover: #2c3e66; /* hover background */
+  --text: #e0e0e0;
+  --accent: #2f5fa7;     /* selection ring */
+}
+
+.container {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 6px;
+  background: var(--panel);
+  border: 1px solid var(--panel-2);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  z-index: 10;
+}
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--panel-2);
+  background: var(--chip);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  outline: none;
+}
+
+.btn:focus {
+  outline: none;
+}
+
+.btn:hover {
+  background: var(--chip-hover);
+}
+
+.active {
+  background: #2a3a58;
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 70%, transparent);
+  color: white;
+}

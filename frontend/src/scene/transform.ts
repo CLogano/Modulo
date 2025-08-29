@@ -1,6 +1,6 @@
 // Helper functions for applying transform operations on each shape (translate, scale, rotate)
-
-import type { Transform } from "./types";
+// Also for obtaining world matrix of a node
+import type { Transform } from "./types.ts";
 
 export function translate(
     transform: Transform,

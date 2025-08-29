@@ -11,7 +11,7 @@ interface HierarchyProps {
     onAdd: (
         parentId: string | null,
         name: string,
-        transform?: Transform,
+        transform?: Partial<Transform>,
         render?: { primitive: Primitive }
     ) => void;
     onDelete: (targetId: string) => void;
