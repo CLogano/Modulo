@@ -9,3 +9,101 @@
     border-left: 1px solid #1b263b;
     box-sizing: border-box;
 }
+
+.header {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  background-color: #1b263b;
+  border-bottom: 2px solid #24344d;
+  font-weight: bold;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.icon {
+  margin-right: 0.5rem;
+  color: #9fb1c9;
+}
+
+.title {
+  color: #9fb1c9;
+}
+
+.body {
+  padding: 0.5rem;
+  overflow: auto;
+}
+
+.section {
+  background: #1b263b;
+  border: 1px solid #1b2e45;
+  border-radius: 6px;       
+  padding: 0.4rem 0.5rem;  
+  margin-bottom: 0.5rem;  
+}
+
+.sectionTitle {
+  font-size: 0.7rem;       
+  color: #9fb1c9;
+  margin-bottom: 0.25rem; 
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.nameInput {
+  width: 100%;
+  background: #0b1a2a;
+  border: 1px solid #20344f;
+  color: #e0e0e0;
+  border-radius: 4px;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.8rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.nameInput:disabled {
+  opacity: 0.6;
+}
+
+.sectionFooter {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.35rem;
+}
+
+.resetButton {
+  appearance: none;
+  background: #0b1a2a;          
+  border: 1px solid #20344f;   
+  color: #e0e0e0;
+  border-radius: 4px;
+  padding: 0.28rem 0.55rem;    
+  font-size: 0.75rem;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 80ms ease;
+}
+
+.resetButton:hover {
+  background: #102238;         
+  border-color: #2a4a6e;
+}
+
+.resetButton:active {
+  transform: translateY(1px);
+  background: #0a1726;
+  border-color: #24425f;
+}
+
+.resetButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(58,160,255,0.35); 
+}
+
+.resetButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
