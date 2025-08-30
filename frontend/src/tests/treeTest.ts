@@ -1,6 +1,6 @@
-import { createNode, addChild, removeNode, updateNode, findNode, reparent, reorderAmongSiblings } from "./tree.ts";
-import { printTree } from "./tree.ts";
-import type { Node } from "./types.ts";
+import { createNode, addChild, removeNode, updateNode, findNode, reparent, reorderAmongSiblings } from "../model/tree.ts";
+import { printTree } from "../model/tree.ts";
+import type { Node } from "../model/types.ts";
 
 // Step 1: create a root
 let root: Node | null = createNode("root", undefined, undefined, true);

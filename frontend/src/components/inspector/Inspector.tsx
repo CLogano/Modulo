@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import classes from "./Inspector.module.css";
-import { findNode } from "../scene/tree";
-import type { Node } from "../scene/types";
+import { findNode } from "../../model/tree";
+import type { Node } from "../../model/types";
 import TransformInput from "./TransformInput";
 import InfoIcon from '@mui/icons-material/Info';
+import { round3, toDeg, toRad, toNum } from "../../utils/math";
 
 interface InspectorProps {
     root: Node | null;
@@ -11,18 +12,11 @@ interface InspectorProps {
     onUpdate: (id: string, updates: Partial<Node>) => void;
 }
 
-// Helpers for converting degrees to degrees / radians
-const toDeg = (r: number) => (r * 180) / Math.PI;
-const toRad = (d: number) => (d * Math.PI) / 180;
-
-// Helper for rounding number to 3 decimals
-const round3 = (n: number) => Number(n.toFixed(3));
-
 const Inspector = (props: InspectorProps) => {
 
     const { root, selectedId, onUpdate } = props;
 
-    // Local editable state
+    // Local editable state: name, transform (TRS)
     const [name, setName] = useState<string>("");
     const [position, setPosition] = useState<[string, string, string]>(["0", "0", "0"]);
     const [rotation, setRotation] = useState<[string, string, string]>(["0", "0", "0"]); // In degrees
@@ -71,11 +65,6 @@ const Inspector = (props: InspectorProps) => {
         if (!selectedNode) {
             return;
         }
-
-        const toNum = (s: string, fb = 0) => {
-            const n = parseFloat(s);
-            return Number.isFinite(n) ? n : fb;
-        };
 
         onUpdate(selectedNode.id, {
             transform: {
@@ -138,21 +127,18 @@ const Inspector = (props: InspectorProps) => {
                             values={position}
                             onChange={setPosition}
                             onCommit={commitTransform}
-                            disabled={!selectedNode}
                         />
                         <TransformInput
                             label="Rotation"
                             values={rotation}
                             onChange={setRotation}
                             onCommit={commitTransform}
-                            disabled={!selectedNode}
                         />
                         <TransformInput
                             label="Scale"
                             values={scale}
                             onChange={setScale}
                             onCommit={commitTransform}
-                            disabled={!selectedNode}
                         />
                         <div className={classes.sectionFooter}>
                             <button className={classes.resetButton} onClick={resetTransform}>

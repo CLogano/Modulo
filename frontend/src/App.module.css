@@ -6,7 +6,7 @@
   overflow: hidden;
 }
 
-/* Fixed-width left pane (Hierarchy) */
+/* Left pane (Hierarchy) */
 .paneLeft {
   min-width: 100px;
   max-width: 600px;
@@ -22,7 +22,7 @@
   display: flex;
 }
 
-/* Fixed-width right pane (Inspector) */
+/* Right pane (Inspector) */
 .paneRight {
   min-width: 100px;
   max-width: 600px;

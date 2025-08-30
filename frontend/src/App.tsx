@@ -1,16 +1,12 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import classes from "./App.module.css";
-import { createNode, addChild, removeNode, updateNode, reparent, reorderAmongSiblings } from './scene/tree';
-import type { Node, Transform, Primitive } from './scene/types';
+import { createNode, addChild, removeNode, updateNode, reparent, reorderAmongSiblings } from './model/tree';
+import type { Node, Transform, Primitive } from './model/types';
 import { loadLocal, saveLocal } from "./utils/persist";
-import Hierarchy from './components/Hierarchy';
-import Scene from './components/Scene';
-import Inspector from './components/Inspector';
-
-// Clamp function for resizing
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
+import Hierarchy from './components/hierarchy/Hierarchy';
+import Scene from './components/scene/Scene';
+import Inspector from './components/inspector/Inspector';
+import { clamp } from './utils/math';
 
 function App() {
 
@@ -20,9 +16,10 @@ function App() {
   );
   // State representing the currently selected node
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Resizable layout state
-  const [leftWidth, setLeftWidth] = useState<number>(320);  // Hierarchy width (px)
-  const [rightWidth, setRightWidth] = useState<number>(320); // Inspector width (px)
+  // Resizable layout state. Hierarchy / Inspector default widths of 400px each
+  const [leftWidth, setLeftWidth] = useState<number>(400);  // Hierarchy width (px)
+  const [rightWidth, setRightWidth] = useState<number>(400); // Inspector width (px)
+  // Ref for storing gutter drag info
   const dragState = useRef<{ side: "left" | "right"; startX: number; startW: number } | null>(null);
 
   // Holds the id of the node that should auto-enter rename mode only ONCE upon creation
@@ -82,7 +79,7 @@ function App() {
     }
   };
 
-  // Handle updating a node (rename, transform, render, etc.)
+  // Handle updating a node (rename, transform, etc.)
   const onUpdateHandler = (id: string, updates: Partial<Node>) => {
     setRoot((prev) => updateNode(prev, id, updates));
   };
@@ -108,35 +105,36 @@ function App() {
   // Handle reordering among siblings: drop dragged node above or below a target sibling
   const onReorderHandler = (childId: string, parentId: string, targetIndex: number) => {
     setRoot(prev => reorderAmongSiblings(prev, childId, parentId, targetIndex));
-    setSelectedId(childId);
+    setSelectedId(childId); // keep the moved node selected
   };
 
-  // Start a drag on the specified gutter ("left" or "right") and capture initial mouse/width
-  const onGutterMouseDown = useCallback((side: "left" | "right") => (e: React.MouseEvent) => {
+  // Begin dragging a gutter (left or right)
+  // Gutters are used to adjust the width of one of the panes (hierarchy / center / inspector)
+  const onGutterMouseDown = (side: "left" | "right") => (e: React.MouseEvent) => {
     e.preventDefault();
     if (side === "left") {
-      dragState.current = { side, startX: e.clientX, startW: leftWidth };
+      dragState.current = { side, startX: e.clientX, startW: leftWidth }; // remember we are dragging from left gutter
     } else {
-      dragState.current = { side, startX: e.clientX, startW: rightWidth };
+      dragState.current = { side, startX: e.clientX, startW: rightWidth }; // remember we are dragging from right gutter
     }
-    // attach listeners on window so drag continues outside gutter
+    // Attach listeners on window so drag continues outside gutter
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
-    document.body.style.cursor = "col-resize";
+    document.body.style.cursor = "col-resize"; // style cursor
     document.body.style.userSelect = "none";
-  }, [leftWidth, rightWidth]);
+  };
 
-  // While dragging, compute delta and update the appropriate pane width (clamped)
+  // Update width of hierarchy / inspector when dragging the mouse over the gutter
   const onMouseMove = (e: MouseEvent) => {
     if (!dragState.current) return;
     const dx = e.clientX - dragState.current.startX;
 
     if (dragState.current.side === "left") {
-      // moving gutter: leftWidth = start + dx
-      const next = clamp(dragState.current.startW + dx, 200, 600);
+      // Moving gutter: leftWidth = start + dx
+      const next = clamp(dragState.current.startW + dx, 100, 600);
       setLeftWidth(next);
     } else {
-      // moving right gutter: rightWidth = start - dx (drag right shrinks inspector)
+      // Moving right gutter: rightWidth = start - dx (drag right shrinks inspector)
       const next = clamp(dragState.current.startW - dx, 100, 600);
       setRightWidth(next);
     }

@@ -4,9 +4,8 @@ import MoveIcon from '@mui/icons-material/OpenWith';
 import RotateIcon from '@mui/icons-material/Cached';
 import ScaleIcon from '@mui/icons-material/AspectRatio';
 
-
 interface ViewportToolbarProps {
-  selectedMode: "view" | "move" | "rotate" | "scale";
+  selectedMode: "view" | "move" | "rotate" | "scale"; // different tool options
   onSelectMode: (mode: "view" | "move" | "rotate" | "scale") => void;
 }
 

@@ -1,5 +1,6 @@
 // Model layer / source of truth
 // Tree composed of <Node>
+import { clamp } from '../utils/math.ts';
 import type { Node, Transform, Primitive } from './types.ts';
 import { v4 as uuidv4 } from "uuid";
 
@@ -223,7 +224,6 @@ export function updateNode(
 
 // Assign a node under a new parent.
 // Appends the child node at the end of the parent's children array.
-// Maintain the child's world transform.
 // Cannot reparent under itself or a descendant node.
 // Returns the updated root.
 export function reparent(
@@ -294,7 +294,7 @@ export function reorderAmongSiblings(
         const [childToMove] = newChildren.splice(childIndex, 1);
 
         // Clamp target index to [0, newChildren.length]
-        let clampedIndex = Math.max(0, Math.min(targetIndex, newChildren.length));
+        let clampedIndex = clamp(targetIndex, 0, newChildren.length);
 
         // Insert at the clampedIndex
         newChildren.splice(clampedIndex, 0, childToMove);

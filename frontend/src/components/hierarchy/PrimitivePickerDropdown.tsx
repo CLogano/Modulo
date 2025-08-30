@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import classes from "./PrimitivePickerDropdown.module.css";
-import type { Primitive } from "../scene/types";
+import type { Primitive } from "../../model/types";
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import { Box, Cone, Cylinder, Circle } from 'lucide-react';
 
@@ -16,7 +16,7 @@ const PrimitivePickerDropdown = (props: PrimitivePickerDropdownProps) => {
     // Ref to track outside clicks and focus / position if needed
     const ref = useRef<HTMLDivElement | null>(null);
 
-    // Close on outside click or escape key
+    // Close on outside click or esc
     useEffect(() => {
         const onDocDown = (e: MouseEvent) => {
             if (!ref.current) {
@@ -31,18 +31,15 @@ const PrimitivePickerDropdown = (props: PrimitivePickerDropdownProps) => {
                 onDismiss?.();
             }
         };
-        document.addEventListener("mousedown", onDocDown);
+        document.addEventListener("mousedown", onDocDown); // add event listeners
         document.addEventListener("keydown", onKey);
         return () => {
-            document.removeEventListener("mousedown", onDocDown);
+            document.removeEventListener("mousedown", onDocDown); // remove event listeners on cleanup
             document.removeEventListener("keydown", onKey);
         };
     }, [onDismiss]);
 
-    // Keep clicks inside the popup from triggering the outside-click handler
-    const stop = (e: React.MouseEvent) => e.stopPropagation();
-
-    // Map each primitive
+    // Map each primitive to a label, value and icon
     const items: { label: string; value: Primitive | null; Icon: React.ElementType }[] = [
         { label: "Empty", value: null, Icon: CropFreeIcon },
         { label: "Box", value: "box", Icon: Box },
@@ -50,6 +47,9 @@ const PrimitivePickerDropdown = (props: PrimitivePickerDropdownProps) => {
         { label: "Cone", value: "cone", Icon: Cone },
         { label: "Sphere", value: "sphere", Icon: Circle },
     ];
+
+    // Keep clicks inside the popup from triggering the outside-click handler
+    const stop = (e: React.MouseEvent) => e.stopPropagation();
 
     return (
         <div className={classes.container} ref={ref} onMouseDown={stop} onClick={stop}>
