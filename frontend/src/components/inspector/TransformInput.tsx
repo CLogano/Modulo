@@ -10,7 +10,7 @@ interface TransformInputProps {
 
 const TransformInput = (props: TransformInputProps) => {
 
-    const { label, values, onChange, onCommit, disabled } = props;
+    const { label, values, onChange, onCommit, } = props;
 
     // Update one of pos / rot / scale
     const handleChange = (i: 0 | 1 | 2, v: string) => {
@@ -23,7 +23,7 @@ const TransformInput = (props: TransformInputProps) => {
         <div className={classes.row}>
             <div className={classes.label}>{label}</div>
             <div className={classes.inputs}>
-                {(["X", "Y", "Z"] as const).map((axis, i) => (
+                {(["X", "Y", "Z"] as const).map((axis, i) => ( // map each X, Y, Z to input field
                     <div className={classes.axisGroup} key={axis}>
                         <span className={classes.axisBadge}>{axis}</span>
                         <input
@@ -31,14 +31,13 @@ const TransformInput = (props: TransformInputProps) => {
                             className={classes.input}
                             value={values[i]}
                             onChange={(e) => handleChange(i as 0 | 1 | 2, e.currentTarget.value)}
-                            onBlur={onCommit}
+                            onBlur={onCommit} // commit changes when user clicks away
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                    onCommit();
+                                    onCommit(); // commit changes when user clicks enter key
                                     e.currentTarget.blur(); // defocus on Enter
                                 }
                             }}
-                            disabled={disabled}
                         />
                     </div>
                 ))}

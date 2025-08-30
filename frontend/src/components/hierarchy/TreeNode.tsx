@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import classes from "./TreeNode.module.css";
-import type { Node, Transform, Primitive } from "../scene/types";
+import type { Node, Transform, Primitive } from "../../model/types";
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -50,7 +50,6 @@ const TreeNode = (props: TreeNodeProps) => {
   // clear the highlight when the count returns to zero.
   const overCountRef = useRef(0);
 
-
   // Auto-enter edit only if this node was just created; consume the ref so it won't trigger after reparent/remount
   useEffect(() => {
     if (isSelected && node.name === "New Node" && justCreatedIdRef.current === node.id) {
@@ -83,13 +82,13 @@ const TreeNode = (props: TreeNodeProps) => {
   const commitRename = (value: string) => {
     setIsEditing(false);
     const next = value.trim();
-    if (next && next !== node.name) onUpdate(node.id, { name: next });
+    if (next && next !== node.name) {
+      onUpdate(node.id, { name: next });
+    }
   };
 
   // Helper to zoom to Scene via CustomEvent
   const zoomToNode = () => {
-    // ensure selection syncs first
-    //onSelect(node.id);
     window.dispatchEvent(
       new CustomEvent("scene:zoom-to-node", { detail: { id: node.id } })
     );
@@ -222,7 +221,6 @@ const TreeNode = (props: TreeNodeProps) => {
           }
         }}
         onDragEnd={(e) => {
-
           // Clear global dragged ID
           globalDraggedId = null;
 
@@ -272,12 +270,10 @@ const TreeNode = (props: TreeNodeProps) => {
                   }
                 }
               }
-
               onReorder(draggedId, parentId, targetIndex);
             }
             return;
           }
-
           // Otherwise, reparent under THIS node
           onReparent(draggedId, node.id);
         }}

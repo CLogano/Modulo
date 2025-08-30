@@ -1,5 +1,5 @@
 import classes from "./Hierarchy.module.css";
-import type { Node, Transform, Primitive } from "../scene/types";
+import type { Node, Transform, Primitive } from "../../model/types";
 import Tree from "./Tree";
 import { AccountTree } from "@mui/icons-material";
 

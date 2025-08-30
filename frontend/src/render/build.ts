@@ -1,6 +1,6 @@
 // View layer: transform tree --> Three.js objects
 import * as THREE from "three";
-import type { Node } from "./types";
+import type { Node } from "../model/types";
 
 // Helper function to map primitive type to its corresponding 3D object
 // Returns unit shapes
@@ -66,6 +66,7 @@ export function buildObject(node: Node): THREE.Object3D {
 // Dispose helper to avoid GPU leaks when we replace content
 export function disposeObject(obj: THREE.Object3D) {
 
+  // Recurse through each object and children, disposing meshes and materials
   obj.traverse((o) => {
 
     const mesh = o as THREE.Mesh;

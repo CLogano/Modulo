@@ -6,10 +6,10 @@ import { TransformControls } from "three-stdlib";
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import type { Node } from "../scene/types";
-import { buildObject, disposeObject } from "../scene/scene";
+import type { Node } from "../../model/types";
+import { buildObject, disposeObject } from "../../render/build";
 import ViewportToolbar from "./ViewportToolbar";
+import { addSceneBasics, setupCamera, setupComposer, setupOrbitControls, setupRenderer, setupResizeHandling, setupScenes, setupTransformControls, startRenderLoop } from "../../utils/threeSetup";
 
 interface SceneProps {
     root: Node | null;
@@ -22,36 +22,37 @@ const Scene = (props: SceneProps) => {
 
     const { root, selectedId, onSelect, onUpdate } = props;
 
-    // toolbar/gizmo mode
+    // State for controlling toolbar / gizmo mode
     const [selectedGizmoMode, setSelectedGizmoMode] = useState<"view"|"move"|"rotate"|"scale">("move");
 
-    // Reference to the <div> container in our JSX
+    // Core three.js refs
     const containerRef = useRef<HTMLDivElement | null>(null);
-    // Store the renderer instance so we can clean it up later
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-    // Keep scene, control & camera refs so we can render each frame
-    const sceneRef = useRef<THREE.Scene | null>(null);            
+    const sceneRef = useRef<THREE.Scene | null>(null);
+    const gizmoSceneRef = useRef<THREE.Scene | null>(null); // separate overlay scene            
     const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
     const controlsRef = useRef<OrbitControls | null>(null);
-    const frameRef = useRef<number | null>(null);
+    
     // Holds the content of the built node hierarchy
     const contentRef = useRef<THREE.Object3D | null>(null);
-    // Post processing refs: help with outline drawing, etc.
+
+    // Post processing
     const composerRef = useRef<EffectComposer | null>(null);
     const renderPassRef = useRef<RenderPass | null>(null);
     const primaryOutlinePassRef = useRef<OutlinePass | null>(null);   // selected node
     const childOutlinePassRef = useRef<OutlinePass | null>(null);     // descendants
-    // Raycasting for selecting objects, etc.
+
+    // Object selection
     const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
-    const pointerNdc = useRef(new THREE.Vector2()); // scratch vec2
-    // Transform controls (Gizmo) refs
+    const pointerNdc = useRef(new THREE.Vector2());
+
+    // TransformControls (gizmo)
     const transformControlsRef = useRef<TransformControls | null>(null);
-    const gizmoSceneRef = useRef<THREE.Scene | null>(null);
-    const gizmoPointerDownRef = useRef(false);
+    const isgizmoPointerDownRef = useRef<() => boolean>(() => false);
     const attachedGizmoObjRef = useRef<THREE.Object3D | null>(null);
-    // Internal gizmo mode (THREE naming)
     const gizmoModeRef = useRef<"translate" | "rotate" | "scale">("translate");
 
+    // One-time three-js setup
     useEffect(() => {
 
         const container = containerRef.current;
@@ -59,132 +60,54 @@ const Scene = (props: SceneProps) => {
             return;
         }
 
-        // Create the WebGL renderer (manages canvas)
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        // Match browser pixel density, but cap at 2 for performance
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        // Renderer
+        const { renderer, cleanup: rendererCleanup, size } = setupRenderer(container);
+        rendererRef.current = renderer; // For cleaning up later
 
-        // Set initial size for the renderer's canvas
-        // If the container has no size yet, fallback to 800x600
-        const w = container.clientWidth || 800;
-        const h = container.clientHeight || 600;
-        renderer.setSize(w, h, false);
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        renderer.shadowMap.enabled = true;
-        renderer.autoClear = false;
-
-        // Append renderer canvas to container
-        container.appendChild(renderer.domElement);
-
-        // Store a reference of renderer for cleaning up later
-        rendererRef.current = renderer;
-
-        // Scene setup
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
+        // Scenes
+        const { scene, gizmoScene } = setupScenes();
         sceneRef.current = scene;
-        // Create scene for gizmo as well
-        const gizmoScene = new THREE.Scene();
         gizmoSceneRef.current = gizmoScene;
 
-        // Grid (floor) so you can see space/origin
-        const grid = new THREE.GridHelper(50, 50, 0x888888, 0x444444);
-        scene.add(grid);
+        // Grid/Lights/Axes
+        const basics = addSceneBasics(scene);
 
-        // Add XYZ axes at origin (X=red, Y=green, Z=blue)
-        const axes = new THREE.AxesHelper(2);
-        scene.add(axes);
-
-        // Lights so future meshes won’t be black
-        const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.6);
-        scene.add(hemi);
-        const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-        dir.position.set(5, 10, 7);
-        dir.castShadow = true;
-        scene.add(dir);
-
-        // Camera setup
-        const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 1000);
-        camera.position.set(5, 4, 8);
-        camera.lookAt(0, 0, 0);
+        // Camera
+        const { camera } = setupCamera(container);
         cameraRef.current = camera;
 
-        // Controls
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0, 0);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.mouseButtons = {
-            LEFT: null as any,
-            MIDDLE: THREE.MOUSE.PAN,
-            RIGHT: THREE.MOUSE.ROTATE,
-        };
-        controls.minDistance = 1;
-        controls.maxDistance = 200;
-        controls.enablePan = true;
+        // Orbit Controls
+        const { controls, cleanup: controlsCleanup } = setupOrbitControls(camera, renderer.domElement);
         controlsRef.current = controls;
 
-        // Transform controls
-        const transformControls = new TransformControls(camera, renderer.domElement);
-        transformControls.setMode('translate');           // 'translate' | 'rotate' | 'scale', translate by default
-        transformControls.setSize(0.5);                      // gizmo size
-        transformControls.layers.set(31);                   // Give it a high layer to ignore raycasts
-        transformControls.visible = false;                // start hidden
-        gizmoScene.add(transformControls);              // Add to gizmo scene
+        // Transform controls (gizmo)
+        const {
+            transformControls,
+            pointerIsDown,
+            cleanup: tcCleanup,
+        } = setupTransformControls(camera, renderer.domElement, gizmoScene, controls);
         transformControlsRef.current = transformControls;
-        (transformControls as any).addEventListener('mouseDown', () => {
-            gizmoPointerDownRef.current = true;
-        });
-        (transformControls as any).addEventListener('mouseUp', () => {
-            gizmoPointerDownRef.current = false;
-        });
+        isgizmoPointerDownRef.current = () => pointerIsDown;
 
-        // Disable OrbitControls / Context menu while dragging the gizmo
-        (transformControls as any).addEventListener('dragging-changed', (e: any) => {
-            controls.enabled = !e.value;
-        });
-
-        // Post-processing pipeline
-        const composer = new EffectComposer(renderer);
-        composer.setSize(w, h)
-        composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        // Render pass
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-        // Child pass (secondary color)
-        const childPass = new OutlinePass(new THREE.Vector2(w, h), scene, camera);
-        childPass.visibleEdgeColor.set(0x3AA0FF);   // secondary: cool blue
-        childPass.hiddenEdgeColor.set(0x3AA0FF);
-        childPass.edgeStrength = 2.0;
-        childPass.edgeThickness = 0.9;
-        childPass.pulsePeriod = 0;
-        composer.addPass(childPass);
-        // Primary pass (selected node color)
-        const primaryPass = new OutlinePass(new THREE.Vector2(w, h), scene, camera);
-        primaryPass.visibleEdgeColor.set(0xFF8A00); // primary: bright orange
-        primaryPass.hiddenEdgeColor.set(0xFF8A00);
-        primaryPass.edgeStrength = 3.8;
-        primaryPass.edgeThickness = 1.5;
-        primaryPass.pulsePeriod = 0;
-        composer.addPass(primaryPass);
-        // Output pass
-        const outputPass = new OutputPass(); 
-        composer.addPass(outputPass);
+        // Post-processing
+        // Helps us with selection outlines
+        const {
+            composer,
+            renderPass,
+            primaryOutline,
+            childOutline,
+            cleanup: composerCleanup,
+        } = setupComposer(renderer, scene, camera, size);
         composerRef.current = composer;
         renderPassRef.current = renderPass;
-        primaryOutlinePassRef.current = primaryPass;
-        childOutlinePassRef.current = childPass;
+        primaryOutlinePassRef.current = primaryOutline;
+        childOutlinePassRef.current = childOutline;
 
-        // Prevent context menu on right-click dragging
-        const preventContext = (e: MouseEvent) => e.preventDefault();
-        renderer.domElement.addEventListener("contextmenu", preventContext);
-
+        // Resize handling
+        const resize = setupResizeHandling(container, renderer, camera, composer);
+        
         // Click to select objects on the canvas
         const handleMouseDown = (e: MouseEvent) => {
-
-            //e.stopPropagation();              // don't let the Tree's global "clear selection" run
 
             if (e.button !== 0) {
                 return;
@@ -193,7 +116,7 @@ const Scene = (props: SceneProps) => {
             // If we are interacting with the gizmo, do not change selection.
             // Otherwise we can't use the gizmo
             const tc = transformControlsRef.current as any;
-            if (gizmoPointerDownRef.current || tc?.dragging || tc?.axis) {
+            if (isgizmoPointerDownRef.current() || tc?.dragging || tc?.axis) {
                 return;
             }
 
@@ -287,12 +210,18 @@ const Scene = (props: SceneProps) => {
         };
         const handleZoomToNode = (e: Event) => {
             const id = (e as CustomEvent<{ id: string }>).detail?.id;
-            if (!id || !contentRef.current) return;
+            if (!id || !contentRef.current) {
+                return;
+            }
             let target: THREE.Object3D | null = null;
             contentRef.current.traverse((o) => {
-                if (!target && (o as any).userData?.nodeId === id) target = o;
+                if (!target && (o as any).userData?.nodeId === id) {
+                    target = o;
+                }
             });
-            if (target) frameObject(target);
+            if (target) {
+                frameObject(target);
+            }
         };
 
         window.addEventListener("scene:zoom-to-node", handleZoomToNode);
@@ -300,7 +229,9 @@ const Scene = (props: SceneProps) => {
         // World-preserving reparent: Scene does `attach()`, then reports new local TRS
         const handleRequestReparent = (e: Event) => {
             const detail = (e as CustomEvent<{ childId: string; newParentId: string }>).detail;
-            if (!detail || !contentRef.current) return;
+            if (!detail || !contentRef.current) {
+                return;
+            }
 
             const { childId, newParentId } = detail;
 
@@ -314,7 +245,9 @@ const Scene = (props: SceneProps) => {
                 if (id === newParentId) parentObj = o;
             });
 
-            if (!childObj || !parentObj) return;
+            if (!childObj || !parentObj) {
+                return;
+            }
 
             // Preserve world transform while changing parent
             (parentObj as THREE.Object3D).attach(childObj);
@@ -339,98 +272,49 @@ const Scene = (props: SceneProps) => {
 
         window.addEventListener("scene:request-reparent", handleRequestReparent);
 
-        // Resizing: instead of resizing the WebGL canvas immediately on every tiny size change
-        // (which happens constantly while dragging a gutter), we:
-        // 1) record the latest container width/height,
-        // 2) set a "needsResize" flag, and
-        // 3) actually apply the resize once, in the next animation frame (inside tick()).
-        let desiredW = w;
-        let desiredH = h;
-        let needsResize = false;
-
-        // Fires whenever the container's content box size changes
-        const ro = new ResizeObserver(() => {
-            if (!containerRef.current) {
-                return;
-            }
-            // Read the newest container size
-            desiredW = containerRef.current.clientWidth;
-            desiredH = containerRef.current.clientHeight;
-            needsResize = true; // apply next frame
-        });
-        ro.observe(container);
-
         // Render loop (like Update in Unity)
-        const tick = () => {
-            // Queue the next frame
-            frameRef.current = requestAnimationFrame(tick);
-
-            // Apply any pending resize exactly once per frame
-            if (needsResize && rendererRef.current && cameraRef.current) {
-                rendererRef.current.setSize(desiredW, desiredH, false);
-                cameraRef.current.aspect = desiredW / desiredH;
-                cameraRef.current.updateProjectionMatrix();
-                composerRef.current?.setSize(desiredW, desiredH);
-                needsResize = false; // resize handled for this frame
-            }
-
-            controlsRef.current?.update();
-
-            const r = rendererRef.current;
-            const cam = cameraRef.current;
-            const gScene = gizmoSceneRef.current;
-
-            // Clear renderer once at the start of the frame
-            r?.setRenderTarget(null);
-            r?.clear(true, true, true);
-
-            // Draw the scenes
-            // Render main scene (with OutlinePass) via composer
-            composerRef.current?.render();
-            // Render gizmo overlay on top
-            if (r && cam && gScene) {
-                r.clearDepth();       // keep color, reset depth
-                r.render(gScene, cam);
-            }
-        };
-        tick();
+        const { stop } = startRenderLoop({
+            composer: composer,
+            renderer,
+            camera,
+            gizmoScene,
+            controls,
+            beforeRender: resize.applyIfNeeded,
+        });
 
         // Cleanup function runs when component unmounts
         return () => {
-            ro.disconnect();
-            renderer.domElement.removeEventListener("contextmenu", preventContext);
-            renderer.domElement.removeEventListener("mousedown", handleMouseDown);
-            window.removeEventListener("scene:zoom-to-node", handleZoomToNode);
+            stop();
             window.removeEventListener("scene:request-reparent", handleRequestReparent);
-            if (frameRef.current) {
-                cancelAnimationFrame(frameRef.current);
-            }
+            window.removeEventListener("scene:zoom-to-node", handleZoomToNode);
+            window.removeEventListener("keydown", handleKeyDown);
+            renderer.domElement.removeEventListener("mousedown", handleMouseDown);
 
-            // Destroy content
+            // Destroy hierarchy content
             if (contentRef.current) {
                 contentRef.current.removeFromParent();
                 disposeObject(contentRef.current);
                 contentRef.current = null;
             }
 
-            // Destroy post-processing
-            primaryOutlinePassRef.current = null;
-            childOutlinePassRef.current = null;
-            renderPassRef.current = null;
-            composerRef.current?.dispose();
-            composerRef.current = null;
+            // Dispose helpers
+            basics.cleanup();
+            controlsCleanup();
+            tcCleanup();
+            rendererCleanup();
+            composerCleanup();
 
-            controls.dispose();
-            renderer.dispose();
-            renderer.domElement.remove();
+            // Null out refs
             rendererRef.current = null;
             sceneRef.current = null;
+            gizmoSceneRef.current = null;
             cameraRef.current = null;
             controlsRef.current = null;
-
-            transformControlsRef.current?.dispose?.();
-            gizmoSceneRef.current?.remove(transformControls);
+            composerRef.current = null;
+            primaryOutlinePassRef.current = null;
+            childOutlinePassRef.current = null;
             transformControlsRef.current = null;
+            attachedGizmoObjRef.current = null;
         };
 
     }, []); // run once on mount
@@ -565,6 +449,7 @@ const Scene = (props: SceneProps) => {
         };
     }, [selectedId, root, selectedGizmoMode]);
 
+    // Update gizmo based on selected mode
     useEffect(() => {
         const tc = transformControlsRef.current;
         const controls = controlsRef.current;
@@ -572,7 +457,7 @@ const Scene = (props: SceneProps) => {
             return;
         }
 
-        // hand/orbit mode
+        // Hand/orbit mode
         if (selectedGizmoMode === "view") {
             tc.visible = false;
             controls.mouseButtons = {

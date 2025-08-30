@@ -1,4 +1,4 @@
-import type { Node } from "../scene/types";
+import type { Node } from "../model/types";
 
 export type PersistedScene = {
   id: string;
