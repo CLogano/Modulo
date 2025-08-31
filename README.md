@@ -74,6 +74,5 @@ File: frontend/src/tests/treeTest.ts
 Run it with ts-node (one-time install shown below):
 ```bash
 cd frontend
-npm i -D ts-node typescript
-npx ts-node src/tests/treeTest.ts
+npx tsx src/tests/treeTest.ts
 ```
