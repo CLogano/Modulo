@@ -71,7 +71,6 @@ There’s a small script to exercise the pure “model” functions (create, add
 
 File: frontend/src/tests/treeTest.ts
 
-Run it with ts-node (one-time install shown below):
 ```bash
 cd frontend
 npx tsx src/tests/treeTest.ts
