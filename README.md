@@ -1,4 +1,4 @@
-# Model Tree + 3D View
+# Modulo
 
 A single-page **TypeScript React** app that lets you build a model hierarchy (tree) and edit it in a **Three.js** viewport. Nodes can be empty groups or primitives (Box, Cylinder, Cone, Sphere). You can reorder via drag-and-drop, select from either the tree or the 3D view, and manipulate transforms with a gizmo.
 
