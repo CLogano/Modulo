@@ -177,28 +177,29 @@ function App() {
 
     // Find highest existing "(n)" among siblings for this base
     const parentNode = findNode(root, parentId);
+    let foundAny = false;
     let maxNum = 0;
 
     if (parentNode) {
       for (const sibling of parentNode.children) {
-        // 1. Does this sibling share the same base name?
         if (sibling.name === base) {
-          // plain match with no number → treat as number 0
+          // plain base exists at this level -> treat as 0
+          foundAny = true;
           maxNum = Math.max(maxNum, 0);
-        }
-        else {
-          // 2. Does this sibling match "Base (n)" where n is a number?
-          const match = sibling.name.match(/^(.+)\s+\((\d+)\)$/);
-          if (match && match[1] === base) {
-            const num = parseInt(match[2], 10);
-            maxNum = Math.max(maxNum, num);
+        } else {
+          // match "Base (n)"
+          const m = sibling.name.match(/^(.+)\s+\((\d+)\)$/);
+          if (m && m[1] === base) {
+            foundAny = true;
+            const n = parseInt(m[2], 10);
+            if (n > maxNum) maxNum = n;
           }
         }
       }
     }
 
     // Rename the pasted node
-    clone.name = `${base} (${maxNum + 1})`;
+    clone.name = foundAny ? `${base} (${maxNum + 1})` : base;
 
     // Add the subtree as a sibling to the currently selected node
     // The pasted subtree is ordered directly after the selected node
