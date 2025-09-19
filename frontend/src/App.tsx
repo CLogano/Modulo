@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import classes from "./App.module.css";
-import { createNode, addChild, removeNode, updateNode, reparent, reorderAmongSiblings } from './model/tree';
+import { createNode, addChild, removeNode, updateNode, findNode, reparent, reorderAmongSiblings, cloneNode, findParentAndIndex } from './model/tree';
 import type { Node, Transform, Primitive } from './model/types';
 import { loadLocal, saveLocal } from "./utils/persist";
 import Hierarchy from './components/hierarchy/Hierarchy';
@@ -21,9 +21,10 @@ function App() {
   const [rightWidth, setRightWidth] = useState<number>(400); // Inspector width (px)
   // Ref for storing gutter drag info
   const dragState = useRef<{ side: "left" | "right"; startX: number; startW: number } | null>(null);
-
   // Holds the id of the node that should auto-enter rename mode only ONCE upon creation
   const justCreatedIdRef = useRef<string | null>(null);
+  // Ref for copy / pasting by maintaining a clipboard of the selected node id
+  const clipboardIdRef = useRef<string | null>(null);
 
   // Load project from local storage on mount
   useEffect(() => {
@@ -48,6 +49,36 @@ function App() {
     // If root changes again within 500ms, cancel the previous save
     return () => clearTimeout(timer);
   }, [root]);
+
+  // Listen for copy / paste
+  // Ctrl + c for copy, Ctrl + v for paste (Cmd + c / Cmd + v for mac)
+  useEffect(() => {
+
+    const onKeyDown = (e: KeyboardEvent) => {
+
+      // Ensure Ctrl key is pressed
+      const metaOrCtrl = e.ctrlKey || e.metaKey;
+      if (!metaOrCtrl) {
+        return;
+      }
+
+      // Copy
+      if (e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        onCopyHandler();
+      }
+
+      // Paste
+      if (e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        onPasteHandler();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+
+  }, [root, selectedId])
 
   // Handle a newly selected node
   const onSelectHandler = (id: string | null) => {
@@ -106,6 +137,79 @@ function App() {
   const onReorderHandler = (childId: string, parentId: string, targetIndex: number) => {
     setRoot(prev => reorderAmongSiblings(prev, childId, parentId, targetIndex));
     setSelectedId(childId); // keep the moved node selected
+  };
+
+  // Handle copying nodes: assign the clipboard ref as the selected node id
+  const onCopyHandler = () => {
+    if (!root || !selectedId || selectedId === "root") {
+      return;
+    }
+    clipboardIdRef.current = selectedId;
+  };
+
+  // Handle pasting nodes: clone subtree with new ids and insert
+  const onPasteHandler = () => {
+
+    if (!root || !clipboardIdRef.current || !selectedId || selectedId === "root") {
+      return;
+    }
+
+    // Find the subtree we want to clone
+    const targetNode = findNode(root, clipboardIdRef.current);
+    if (!targetNode) {
+      clipboardIdRef.current = null; // stale clipboard
+      return;
+    }
+
+    const info = findParentAndIndex(root, selectedId);
+    if (!info || info.parentId === null) {
+      return; // cannot paste as sibling of root
+    }
+    const { parentId, indexInParent } = info;
+
+    // Clone the subtree
+    const clone = cloneNode(targetNode);
+
+    // Naming
+
+    // Extract the "base" name of the node (name of the node excluding (n) at the end)
+    const base = targetNode.name.replace(/\s+\(\d+\)$/, "");
+
+    // Find highest existing "(n)" among siblings for this base
+    const parentNode = findNode(root, parentId);
+    let maxNum = 0;
+
+    if (parentNode) {
+      for (const sibling of parentNode.children) {
+        // 1. Does this sibling share the same base name?
+        if (sibling.name === base) {
+          // plain match with no number → treat as number 0
+          maxNum = Math.max(maxNum, 0);
+        }
+        else {
+          // 2. Does this sibling match "Base (n)" where n is a number?
+          const match = sibling.name.match(/^(.+)\s+\((\d+)\)$/);
+          if (match && match[1] === base) {
+            const num = parseInt(match[2], 10);
+            maxNum = Math.max(maxNum, num);
+          }
+        }
+      }
+    }
+
+    // Rename the pasted node
+    clone.name = `${base} (${maxNum + 1})`;
+
+    // Add the subtree as a sibling to the currently selected node
+    // The pasted subtree is ordered directly after the selected node
+    setRoot(prev => {
+      const rootAfterAdd = addChild(prev, parentId, clone);
+      return reorderAmongSiblings(rootAfterAdd, clone.id, parentId, indexInParent + 1);
+    });
+
+    // Select the pasted node
+    setSelectedId(clone.id);
+    justCreatedIdRef.current = clone.id;
   };
 
   // Begin dragging a gutter (left or right)

@@ -160,6 +160,37 @@ export function findNode(
     return null;
 }
 
+// Find the parent id and the index-in-parent for a given targetId.
+// Returns null if not found. For root, returns { parentId: null, indexInParent: -1 }.
+export function findParentAndIndex(
+    root: Node | null,
+    targetId: string
+): { parentId: string | null; indexInParent: number } | null {
+
+    if (!root) {
+        return null;
+    }
+
+    if (root.id === targetId) {
+        return { parentId: null, indexInParent: -1 }; // root has no parent
+    }
+
+    // Loop through children and check each child recursively until match is found
+    for (let i = 0; i < root.children.length; i++) {
+
+        const child = root.children[i];
+        if (child.id === targetId) {
+            return { parentId: root.id, indexInParent: i };
+        }
+
+        const found = findParentAndIndex(child, targetId);
+        if (found) {
+            return found; // propagate upwards
+        }
+    }
+    return null;
+}
+
 // Update a node's values by 'targetId'
 // Takes a "patch" object with the fields you want to overwrite
 // Returns the updated root.
@@ -220,6 +251,22 @@ export function updateNode(
         children: newChildren,
         render: root.render ? { ...root.render } : undefined,
     };
+}
+
+// Deep-clone a subtree with new ids
+// Copies transform arrays, render primitive, and recursively clones children.
+export function cloneNode(node: Node): Node {
+    return {
+    id: uuidv4(),
+    name: node.name,
+    transform: {
+      position: [...node.transform.position],
+      rotation: [...node.transform.rotation],
+      scale:    [...node.transform.scale],
+    },
+    ...(node.render ? { render: { primitive: node.render.primitive } } : {}),
+    children: node.children.map(child => cloneNode(child)),
+  };
 }
 
 // Assign a node under a new parent.
