@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import classes from "./App.module.css";
+import Header from './components/header/Header';
 import { createNode, addChild, removeNode, updateNode, findNode, reparent, reorderAmongSiblings, cloneNode, findParentAndIndex } from './model/tree';
 import type { Node, Transform, Primitive } from './model/types';
 import { loadLocal, saveLocal } from "./utils/persist";
@@ -255,38 +256,41 @@ function App() {
   };
 
   return (
-    <div className={classes.container}>
-      <div className={classes.paneLeft} style={{ flex: `0 0 ${leftWidth}px` }}>
-        <Hierarchy
-          root={root!}
-          justCreatedIdRef={justCreatedIdRef}
-          selectedId={selectedId}
-          onSelect={onSelectHandler}
-          onAdd={onAddHandler}
-          onDelete={onDeleteHandler}
-          onUpdate={onUpdateHandler}
-          onReparent={onReparentHandler}
-          onReorder={onReorderHandler}
-        />
+    <>
+      <Header />
+      <div className={classes.container}>
+        <div className={classes.paneLeft} style={{ flex: `0 0 ${leftWidth}px` }}>
+          <Hierarchy
+            root={root!}
+            justCreatedIdRef={justCreatedIdRef}
+            selectedId={selectedId}
+            onSelect={onSelectHandler}
+            onAdd={onAddHandler}
+            onDelete={onDeleteHandler}
+            onUpdate={onUpdateHandler}
+            onReparent={onReparentHandler}
+            onReorder={onReorderHandler}
+          />
+        </div>
+        <div className={`${classes.gutter} ${classes.gutterLeft}`} onMouseDown={onGutterMouseDown("left")} />
+        <div className={classes.paneCenter}>
+          <Scene
+            root={root}
+            selectedId={selectedId}
+            onSelect={onSelectHandler}
+            onUpdate={onUpdateHandler}
+          />
+        </div>
+        <div className={`${classes.gutter} ${classes.gutterRight}`} onMouseDown={onGutterMouseDown("right")} />
+        <div className={classes.paneRight} style={{ flex: `0 0 ${rightWidth}px` }}>
+          <Inspector
+            root={root}
+            selectedId={selectedId}
+            onUpdate={onUpdateHandler}
+          />
+        </div>
       </div>
-      <div className={`${classes.gutter} ${classes.gutterLeft}`} onMouseDown={onGutterMouseDown("left")} />
-      <div className={classes.paneCenter}>
-        <Scene 
-          root={root}
-          selectedId={selectedId}
-          onSelect={onSelectHandler}
-          onUpdate={onUpdateHandler}
-        />
-      </div>
-      <div className={`${classes.gutter} ${classes.gutterRight}`} onMouseDown={onGutterMouseDown("right")} />
-      <div className={classes.paneRight} style={{ flex: `0 0 ${rightWidth}px` }}>
-        <Inspector 
-          root={root}
-          selectedId={selectedId}
-          onUpdate={onUpdateHandler}
-        />
-      </div>
-    </div>
+    </>
   )
 }
 
