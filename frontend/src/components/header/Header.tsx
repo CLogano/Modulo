@@ -3,8 +3,9 @@ import logo from "../../images/Logo.png";
 import UndoIcon from "@mui/icons-material/Undo";
 import RedoIcon from "@mui/icons-material/Redo";
 import SaveIcon from "@mui/icons-material/Save";
-import UploadIcon from "@mui/icons-material/Upload";
-import DownloadIcon from "@mui/icons-material/Download";
+import AddIcon from "@mui/icons-material/AddCircle";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
 interface HeaderProps {
   onUndo: () => void;
@@ -28,8 +29,8 @@ const Header = (props: HeaderProps) => {
   };
 
   return (
-    <div 
-      className={classes.bar} 
+    <div
+      className={classes.bar}
       role="banner"
       onMouseDown={handleBarMouseDown}
     >
@@ -40,7 +41,7 @@ const Header = (props: HeaderProps) => {
 
       <div className={classes.right}>
         {/* Edit group */}
-        <button 
+        <button
           type="button"
           className={classes.btn}
           title="Undo (Ctrl/Cmd+Z)"
@@ -65,16 +66,24 @@ const Header = (props: HeaderProps) => {
 
         <div className={classes.divider} aria-hidden />
 
-        {/* File group */}
-        <button className={classes.btn} title="Save">
+        {/* Project Group */}
+        <button type="button" className={classes.btn} title="New Project">
+          <AddIcon fontSize="small" />
+        </button>
+        <button type="button" className={classes.btn} title="Save Project (Ctrl+S)">
           <SaveIcon fontSize="small" />
         </button>
-        <button className={classes.btn} title="Import project">
-          <UploadIcon fontSize="small" />
+        <button type="button" className={classes.btn} title="My Projects">
+          <FolderOpenIcon fontSize="small" />
         </button>
-        <button className={classes.btn} title="Export project">
-          <DownloadIcon fontSize="small" />
+
+        <div className={classes.divider} aria-hidden />
+
+        {/* Account */}
+        <button type="button" className={classes.btn} title="Account">
+          <AccountCircleIcon fontSize="small" />
         </button>
+
       </div>
     </div>
   );
