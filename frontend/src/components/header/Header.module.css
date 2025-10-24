@@ -1,0 +1,95 @@
+
+:root {
+  --bg: #0d1b2a;
+  --bg-2: #1b263b;
+  --text: #e6efff;
+  --text-dim: #9fb1c9;
+  --accent: #2f5fa7;
+  --accent-2: #1e3f72;
+  --line: #24344d;
+  --chip: #1a2238;
+}
+
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+
+  height: 3rem;             
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 1rem;
+  background-color: var(--bg-2);    
+  border-bottom: 2px solid var(--line); 
+
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.logo {
+  display: block;
+  height: 35px;        
+  width: auto; 
+  object-fit: contain;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.brand {
+  color: var(--text-dim);        
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn {
+  height: 28px;
+  min-width: 28px;
+  padding: 0 8px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--chip);
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+/* Keep hover/active styles for future; harmless now */
+.btn:hover { background: #2c3e66; border-color: var(--line); }
+.btn:active { opacity: 0.85; }
+
+.divider {
+  width: 2px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 6px;
+}
+
+@media (max-width: 520px) {
+  .brand { display: none; }      /* keep bar compact on small screens */
+  .logo  { height: 1.4rem; }
+}
