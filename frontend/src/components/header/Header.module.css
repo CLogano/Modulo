@@ -52,6 +52,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: default;
 }
 
 .right {
@@ -76,6 +77,11 @@
 
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Keep hover/active styles for future; harmless now */

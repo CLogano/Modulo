@@ -8,13 +8,17 @@ import Hierarchy from './components/hierarchy/Hierarchy';
 import Scene from './components/scene/Scene';
 import Inspector from './components/inspector/Inspector';
 import { clamp } from './utils/math';
+import { useUndoRedo } from './hooks/useUndoRedo';
 
 function App() {
 
   // State representing the tree. We initialize the root only
-  const [root, setRoot] = useState<Node | null>(
-    () => createNode("Sample Scene", undefined, undefined, true)
-  );
+  // const [root, setRoot] = useState<Node | null>(
+  //   () => createNode("Sample Scene", undefined, undefined, true)
+  // );
+  const initialRoot = createNode("Sample Scene", undefined, undefined, true);
+  const { root, apply, undo, redo, canUndo, canRedo, replace } = useUndoRedo(initialRoot);
+
   // State representing the currently selected node
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Resizable layout state. Hierarchy / Inspector default widths of 400px each
@@ -31,16 +35,13 @@ function App() {
   useEffect(() => {
     const saved = loadLocal();
     if (saved?.root) {
-      setRoot(saved.root);
+      replace(saved.root);
     }
-  }, []);
+  }, [replace]);
 
   // Auto-save every time the root changes
   // Wait 500ms in between to prevent rapid saves
   useEffect(() => {
-    if (!root) {
-      return;
-    }
 
     // Save after 500ms
     const timer = setTimeout(() => {
@@ -51,11 +52,21 @@ function App() {
     return () => clearTimeout(timer);
   }, [root]);
 
-  // Listen for copy / paste
+  // Listen for copy / paste, undo / redo
   // Ctrl + c for copy, Ctrl + v for paste (Cmd + c / Cmd + v for mac)
+  // Ctrl + z for undo, Ctrl + shift + z for redo
   useEffect(() => {
 
     const onKeyDown = (e: KeyboardEvent) => {
+
+      // Ignore when typing
+      const active = document.activeElement as HTMLElement | null;
+      if (active) {
+        const t = active.tagName.toLowerCase();
+        if (t === "input" || t === "textarea" || (active as any).isContentEditable) {
+          return;
+        }
+      }
 
       // Ensure Ctrl key is pressed
       const metaOrCtrl = e.ctrlKey || e.metaKey;
@@ -74,12 +85,19 @@ function App() {
         e.preventDefault();
         onPasteHandler();
       }
+
+      // Undo / Redo
+      if (e.key.toLowerCase() === "z") { 
+        e.preventDefault(); 
+        e.shiftKey ? redo() : undo(); 
+        return; 
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
 
-  }, [root, selectedId])
+  }, [selectedId, undo, redo])
 
   // Handle a newly selected node
   const onSelectHandler = (id: string | null) => {
@@ -97,7 +115,7 @@ function App() {
     // Create the node
     const newNode = createNode(name, transform, render);
     if (parentId) {
-      setRoot(prev => addChild(prev, parentId, newNode)); // Attach the node under the parent
+      apply(prev => addChild(prev, parentId, newNode) ?? prev); // Attach the node under the parent
       setSelectedId(newNode.id); // Select this node
       justCreatedIdRef.current = newNode.id; // Mark for one-time auto-edit
     }
@@ -105,7 +123,7 @@ function App() {
 
   // Handle deleting a node
   const onDeleteHandler = (targetId: string) => {
-    setRoot(prev => removeNode(prev, targetId).newRoot);
+    apply(prev => removeNode(prev, targetId).newRoot ?? prev);
     if (selectedId === targetId) {
       setSelectedId(null); // Unselect if the deleted node was selected
     }
@@ -113,7 +131,7 @@ function App() {
 
   // Handle updating a node (rename, transform, etc.)
   const onUpdateHandler = (id: string, updates: Partial<Node>) => {
-    setRoot((prev) => updateNode(prev, id, updates));
+    apply((prev) => updateNode(prev, id, updates) ?? prev);
   };
 
   // Handle reparenting: drop dragged node ON a target node
@@ -130,13 +148,13 @@ function App() {
       detail: { childId, newParentId }
     }));
 
-    setRoot(prev => reparent(prev, childId, newParentId));
+    apply(prev => reparent(prev, childId, newParentId) ?? prev);
     setSelectedId(childId); // keep the moved node selected
   };
 
   // Handle reordering among siblings: drop dragged node above or below a target sibling
   const onReorderHandler = (childId: string, parentId: string, targetIndex: number) => {
-    setRoot(prev => reorderAmongSiblings(prev, childId, parentId, targetIndex));
+    apply(prev => reorderAmongSiblings(prev, childId, parentId, targetIndex) ?? prev);
     setSelectedId(childId); // keep the moved node selected
   };
 
@@ -155,63 +173,69 @@ function App() {
       return;
     }
 
-    // Find the subtree we want to clone
-    const targetNode = findNode(root, clipboardIdRef.current);
-    if (!targetNode) {
-      clipboardIdRef.current = null; // stale clipboard
-      return;
-    }
+    let newId: string | null = null;
 
-    const info = findParentAndIndex(root, selectedId);
-    if (!info || info.parentId === null) {
-      return; // cannot paste as sibling of root
-    }
-    const { parentId, indexInParent } = info;
+    apply(prev => {
+      // Find the subtree we want to clone
+      const targetNode = findNode(prev, clipboardIdRef.current!);
+      if (!targetNode) {
+        clipboardIdRef.current = null; // stale clipboard
+        return prev;
+      }
 
-    // Clone the subtree
-    const clone = cloneNode(targetNode);
+      const info = findParentAndIndex(prev, selectedId);
+      if (!info || info.parentId === null) {
+        return prev; // cannot paste as sibling of root
+      }
+      const { parentId, indexInParent } = info;
 
-    // Naming
+      // Clone the subtree
+      const clone = cloneNode(targetNode);
 
-    // Extract the "base" name of the node (name of the node excluding (n) at the end)
-    const base = targetNode.name.replace(/\s+\(\d+\)$/, "");
+      // Naming
 
-    // Find highest existing "(n)" among siblings for this base
-    const parentNode = findNode(root, parentId);
-    let foundAny = false;
-    let maxNum = 0;
+      // Extract the "base" name of the node (name of the node excluding (n) at the end)
+      const base = targetNode.name.replace(/\s+\(\d+\)$/, "");
 
-    if (parentNode) {
-      for (const sibling of parentNode.children) {
-        if (sibling.name === base) {
-          // plain base exists at this level -> treat as 0
-          foundAny = true;
-          maxNum = Math.max(maxNum, 0);
-        } else {
-          // match "Base (n)"
-          const m = sibling.name.match(/^(.+)\s+\((\d+)\)$/);
-          if (m && m[1] === base) {
+      // Find highest existing "(n)" among siblings for this base
+      const parentNode = findNode(prev, parentId);
+      let foundAny = false;
+      let maxNum = 0;
+
+      if (parentNode) {
+        for (const sibling of parentNode.children) {
+          if (sibling.name === base) {
+            // plain base exists at this level -> treat as 0
             foundAny = true;
-            const n = parseInt(m[2], 10);
-            if (n > maxNum) maxNum = n;
+            maxNum = Math.max(maxNum, 0);
+          } else {
+            // match "Base (n)"
+            const m = sibling.name.match(/^(.+)\s+\((\d+)\)$/);
+            if (m && m[1] === base) {
+              foundAny = true;
+              const n = parseInt(m[2], 10);
+              if (n > maxNum) maxNum = n;
+            }
           }
         }
       }
-    }
 
-    // Rename the pasted node
-    clone.name = foundAny ? `${base} (${maxNum + 1})` : base;
+      // Rename the pasted node
+      clone.name = foundAny ? `${base} (${maxNum + 1})` : base;
 
-    // Add the subtree as a sibling to the currently selected node
-    // The pasted subtree is ordered directly after the selected node
-    setRoot(prev => {
-      const rootAfterAdd = addChild(prev, parentId, clone);
-      return reorderAmongSiblings(rootAfterAdd, clone.id, parentId, indexInParent + 1);
+      // Add the subtree as a sibling to the currently selected node
+      // The pasted subtree is ordered directly after the selected node
+      const afterAdd = addChild(prev, parentId, clone) ?? prev;
+      const afterReorder = reorderAmongSiblings(afterAdd, clone.id, parentId, indexInParent + 1) ?? afterAdd;
+
+      newId = clone.id; // capture for selection
+      return afterReorder;
     });
 
-    // Select the pasted node
-    setSelectedId(clone.id);
-    justCreatedIdRef.current = clone.id;
+    if (newId) {
+      setSelectedId(newId);
+      justCreatedIdRef.current = newId;
+    }
   };
 
   // Begin dragging a gutter (left or right)
@@ -257,11 +281,17 @@ function App() {
 
   return (
     <>
-      <Header />
+      <Header 
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onClearSelection={() => setSelectedId(null)}
+      />
       <div className={classes.container}>
         <div className={classes.paneLeft} style={{ flex: `0 0 ${leftWidth}px` }}>
           <Hierarchy
-            root={root!}
+            root={root}
             justCreatedIdRef={justCreatedIdRef}
             selectedId={selectedId}
             onSelect={onSelectHandler}
