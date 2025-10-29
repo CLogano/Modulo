@@ -6,21 +6,27 @@ import { TransformControls } from "three-stdlib";
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
-import type { Node } from "../../model/types";
-import { buildObject, disposeObject } from "../../render/build";
-import ViewportToolbar from "./ViewportToolbar";
-import { addSceneBasics, setupCamera, setupComposer, setupOrbitControls, setupRenderer, setupResizeHandling, setupScenes, setupTransformControls, startRenderLoop } from "../../utils/threeSetup";
+import type { Node } from "../../../model/types";
+import { buildObject, disposeObject } from "../../../render/build";
+import ToolBar from "./ToolBar";
+import ActionBar from "./ActionBar";
+import { addSceneBasics, setupCamera, setupComposer, setupOrbitControls, setupRenderer, setupResizeHandling, setupScenes, setupTransformControls, startRenderLoop } from "../../../utils/threeSetup";
 
 interface SceneProps {
     root: Node | null;
     selectedId: string | null;
     onSelect: (id: string | null) => void;
     onUpdate: (id: string, updates: Partial<Node>) => void;
+    onUndo: () => void;
+    onRedo: () => void;
+    onSave: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
 }
 
 const Scene = (props: SceneProps) => {
 
-    const { root, selectedId, onSelect, onUpdate } = props;
+    const { root, selectedId, onSelect, onUpdate, canUndo, canRedo, onUndo, onRedo, onSave } = props;
 
     // State for controlling toolbar / gizmo mode
     const [selectedGizmoMode, setSelectedGizmoMode] = useState<"view"|"move"|"rotate"|"scale">("move");
@@ -482,9 +488,16 @@ const Scene = (props: SceneProps) => {
 
     return (
         <div className={classes.container} ref={containerRef}>
-            <ViewportToolbar
+            <ToolBar
                 selectedMode={selectedGizmoMode}
                 onSelectMode={setSelectedGizmoMode}
+            />
+            <ActionBar
+                onUndo={onUndo}
+                onRedo={onRedo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onSave={onSave}
             />
         </div>
     );

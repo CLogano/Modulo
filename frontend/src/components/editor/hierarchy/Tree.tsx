@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import classes from "./Tree.module.css";
-import type { Node, Transform, Primitive } from "../../model/types";
+import type { Node, Transform, Primitive } from "../../../model/types";
 import TreeNode from "./TreeNode";
 
 interface TreeProps {

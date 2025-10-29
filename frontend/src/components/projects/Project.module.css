@@ -1,0 +1,105 @@
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;                 /* tall enough to showcase the shot */
+  border-radius: .5rem;
+  overflow: hidden;
+  border: 1px solid #24344d;
+  box-shadow: 0 0 0 1px rgba(36,52,77,.5);
+  cursor: pointer;
+  text-align: left;
+  padding: 0;                           /* remove default button padding */
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  background: transparent;
+}
+
+/* background image layer */
+.image {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  filter: saturate(1.02) contrast(1.02);
+  transition: transform 300ms ease, filter 200ms ease;
+}
+
+/* when we have a bg, pull from CSS var */
+.hasBg .image {
+  background-image: var(--bg-url);
+}
+
+/* placeholder look when no snapshot */
+.noBg .image {
+  background: linear-gradient(180deg, #16233c, #0f1a2d);
+}
+
+/* gradient scrim for readability of text */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 75%, rgba(0,0,0,.65) 100%);
+  pointer-events: none;
+}
+
+/* text overlay block */
+.meta {
+  position: absolute;
+  left: .95rem;
+  right: .95rem;
+  bottom: .9rem;
+
+  display: grid;
+  gap: .25rem;
+  z-index: 1;
+}
+
+.title {
+  color: #eaf1ff;
+  font-weight: 700;
+  letter-spacing: .2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+
+.desc {
+  color: #cfddf3;
+  font-size: .95rem;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* clamp to two lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+
+.descDim {
+  color: #9fb1c9;
+  font-size: .95rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
+.stamp {
+  color: #b9c9e1;
+  font-size: .8rem;
+  opacity: .9;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+
+/* hover / focus effects */
+.card:hover, .card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #2a3a5c;
+  box-shadow: 0 10px 20px rgba(0,0,0,.25), 0 0 0 1px rgba(42,58,92,.8);
+  outline: none;
+}
+.card:hover .image { transform: scale(1.02); filter: saturate(1.05) contrast(1.05); }
+
+/* make keyboard focus visible even without hover */
+.card:focus-visible { box-shadow: 0 0 0 3px rgba(47,128,237,.45), 0 10px 20px rgba(0,0,0,.25); }
+
+/* responsive tweak: slightly taller on narrow screens */
+@media (max-width: 520px) {
+  .card { aspect-ratio: 4 / 3; }
+}

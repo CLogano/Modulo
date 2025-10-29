@@ -1,15 +1,15 @@
-import classes from "./ViewportToolbar.module.css";
+import classes from "./ToolBar.module.css";
 import ViewIcon from '@mui/icons-material/BackHand';
 import MoveIcon from '@mui/icons-material/OpenWith';
 import RotateIcon from '@mui/icons-material/Cached';
 import ScaleIcon from '@mui/icons-material/AspectRatio';
 
-interface ViewportToolbarProps {
+interface ToolBarProps {
   selectedMode: "view" | "move" | "rotate" | "scale"; // different tool options
   onSelectMode: (mode: "view" | "move" | "rotate" | "scale") => void;
 }
 
-const ViewportToolbar = (props: ViewportToolbarProps) => {
+const ToolBar = (props: ToolBarProps) => {
 
   const { selectedMode, onSelectMode } = props;
 
@@ -51,4 +51,4 @@ const ViewportToolbar = (props: ViewportToolbarProps) => {
   );
 };
 
-export default ViewportToolbar;
+export default ToolBar;

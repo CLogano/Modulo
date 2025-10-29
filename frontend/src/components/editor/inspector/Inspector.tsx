@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import classes from "./Inspector.module.css";
-import { findNode } from "../../model/tree";
-import type { Node } from "../../model/types";
+import { findNode } from "../../../model/tree";
+import type { Node } from "../../../model/types";
 import TransformInput from "./TransformInput";
 import InfoIcon from '@mui/icons-material/Info';
-import { round3, toDeg, toRad, toNum } from "../../utils/math";
+import { round3, toDeg, toRad, toNum } from "../../../utils/math";
 
 interface InspectorProps {
     root: Node | null;

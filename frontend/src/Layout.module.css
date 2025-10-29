@@ -1,0 +1,15 @@
+:root {
+  --header-h: 3rem;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: calc(100vh - var(--header-h)); /* subtract header */
+  overflow: hidden;
+}
+
+.fullHeight {
+  height: 100vh; /* when header is hidden (e.g., /signin) */
+}

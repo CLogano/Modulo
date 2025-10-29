@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import classes from "./PrimitivePickerDropdown.module.css";
-import type { Primitive } from "../../model/types";
+import type { Primitive } from "../../../model/types";
 import CropFreeIcon from '@mui/icons-material/CropFree';
 import { Box, Cone, Cylinder, Circle } from 'lucide-react';
 

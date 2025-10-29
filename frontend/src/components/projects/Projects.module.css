@@ -1,0 +1,80 @@
+.wrap {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-2);
+  color: var(--text);
+  overflow: auto;
+}
+
+.inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2rem;
+  box-sizing: border-box;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #9fb1c9;
+  letter-spacing: .4px;
+}
+
+.primaryBig {
+  background: linear-gradient(180deg, var(--accent), #244b74);
+  border: 1px solid #2a3a5c;
+  color: var(--text);
+  padding: .65rem 1rem;
+  border-radius: .5rem;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: .2px;
+  box-shadow: 0 6px 16px rgba(36, 58, 92, .35);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.primaryBig:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(36, 58, 92, .45); filter: brightness(1.05); }
+.primaryBig:active { transform: translateY(0); filter: brightness(.95); }
+.primaryBig:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(47,95,167,.35), 0 8px 22px rgba(0,0,0,.28); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+/* Empty state */
+.empty {
+  display: grid;
+  place-items: center;
+  height: calc(100vh - 8rem); /* keeps it vertically centered; adjust as needed */
+}
+
+.emptyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #203150, #1a2742);
+  border: 1px dashed #2d3f62;
+  border-radius: .9rem;
+  min-height: 240px;
+  width: min(520px, 90vw);
+  text-align: center;
+  padding: 1.25rem;
+  box-shadow: 0 0 0 1px rgba(36,52,77,.5);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  cursor: pointer;
+}
+.emptyCard:hover { border-color: #3a5a93; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,.25); }
+
+.plus { font-size: 2.25rem; line-height: 1; color: #8fb4ff; margin-bottom: .25rem; }
+.emptyTitle { color: #e6efff; font-weight: 700; }
+.emptyHint { color: #9fb1c9; font-size: .95rem; margin-top: .15rem; }

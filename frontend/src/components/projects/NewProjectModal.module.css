@@ -1,0 +1,101 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 16, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 2000;
+}
+
+.modal {
+  width: min(560px, 92vw);
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: .5rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(36,52,77,.6);
+}
+
+.header {
+  padding: 14px 16px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #e6efff;
+}
+
+.body {
+  padding: 14px 16px 6px;
+  display: grid;
+  gap: 12px;
+}
+
+.label {
+  display: grid;
+  gap: 6px;
+  font-size: .9rem;
+  color: var(--text-dim);
+}
+.req { color: #ff9aa9; margin-left: 4px; }
+.dim { opacity: .75; }
+
+.input {
+  background: #0f1b2d;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  outline: none;
+  font: inherit;
+}
+.input:focus {
+  border-color: #2a3a5c;
+  box-shadow: 0 0 0 3px rgba(42,58,92,.35);
+}
+.textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+}
+
+/* Buttons (match your palette) */
+.ghost {
+  background: var(--chip);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: .55rem .9rem;
+  border-radius: .6rem;
+  cursor: pointer;
+}
+.ghost:hover { background: var(--chip-hover); }
+
+.primary {
+  padding: .55rem 1rem;
+  border-radius: .6rem;
+  border: 1px solid #2a3a5c;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+.enabled {
+  background: linear-gradient(180deg, var(--accent), #244b74);
+  color: var(--text);
+  box-shadow: 0 6px 16px rgba(36,58,92,.35);
+}
+.enabled:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(36,58,92,.45); filter: brightness(1.05); }
+.enabled:active { transform: translateY(0); filter: brightness(.95); }
+
+.disabled {
+  background: #1b2a44;
+  color: #9fb1c9;
+  opacity: .65;
+  cursor: not-allowed;
+}
